@@ -1,0 +1,33 @@
+Gfarm Samba VFS module v0.0.1
+----------
+
+INSTALL
+
+Before building this vfs module, you need to get source code of samba and install
+gfarm-devel package or put the gfarm source code to include directory.
+
+
+$ ./configure --with-samba-source=SAMBA_SOURCE_DIRECTORY
+$ make
+
+
+Then, copy gfarm_vfs.so to samba vfs directory as a super user.
+(The directory is "/usr/lib64/samba/vfs" in RHEL5 x86_64.)
+
+# cp gfarm_vfs.so SAMBA_VFS_DIRECTORY
+
+Add following settings to smb.conf:
+-----
+[gfarm]
+        comment = Gfarm FS
+        path = /
+        vfs objects = gfarm_vfs
+        writeable = yes
+        browseable = yes
+-----
+
+Restart samba and access \\sambahostname\gfarm with windows explorer.
+
+
+04 Sep 2010 Hiroki Ohtsuji
+

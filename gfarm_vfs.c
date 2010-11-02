@@ -106,7 +106,7 @@ get_uid(char *user)
 	struct passwd *pwd;
 	char *luser;
 
-	return (505);	//test
+	//return (505);	//test
 
 
 	if (strcmp(gfarm_get_global_username(), user) == 0)
@@ -138,7 +138,7 @@ get_gid(char *group)
 	 * multiple gfmds.
 	 */
 
-	return(505); 		//test
+	//return(505); 		//test
 
 
 	if (gfarm_global_to_local_groupname(group, &lgroup)

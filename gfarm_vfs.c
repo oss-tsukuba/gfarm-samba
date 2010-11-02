@@ -738,7 +738,13 @@ static int gfvfs_rename(vfs_handle_struct *handle,  const char *oldname, const c
         snprintf(errtmp, sizeof(errtmp), "gf2smb: rename");
         write(1, errtmp, strlen(errtmp));
 #endif
-        return 0;
+	gfarm_error_t e;
+	e = gfs_rename(oldname, newname);
+	if (e != GFARM_ERR_NO_ERROR) {
+		errno = gfarm_error_to_errno(e);
+		return -1;
+	}
+	return 0;
 }
 
 static int gfvfs_fsync(vfs_handle_struct *handle, files_struct *fsp, int fd)

@@ -185,25 +185,16 @@ copy_gfs_stat(/*struct stat*/SMB_STRUCT_STAT *dst, struct gfs_stat *src)
 static int gfvfs_connect(vfs_handle_struct *handle,  const char *service, const char *user)	
 {
 
-	//errno = ENOSYS;
-	//char errtmp[64];
-	//snprintf(errtmp, sizeof(errtmp), "euid=%d", geteuid());
-	//write(1, errtmp, strlen(errtmp));
 	gfarm_error_t e;
-	//gflog_error(0, errtmp);
-	//seteuid(506);
-	//setegid(506);
 
 	(void) handle;
 	(void) service;
 	(void) user;
 	e = gfarm_initialize(0, NULL);
 	if (e != GFARM_ERR_NO_ERROR) {
-		//fprintf(stderr, "%s\n", gfarm_error_string(e));
+		errno = gfarm_error_to_errno(e);
 		return -1;
 	}
-	//seteuid(0);
-	//setegid(0);
 	return 0;
 }
 
@@ -214,8 +205,8 @@ static void gfvfs_disconnect(vfs_handle_struct *handle, connection_struct *conn)
 	(void) conn;
 	e = gfarm_terminate();
 	if(e != GFARM_ERR_NO_ERROR){
-		//error
-		return -1;
+		errno = gfarm_error_to_errno(e);
+		return ;
 	}
 	return;
 }
@@ -263,7 +254,9 @@ static int gfvfs_set_quota(vfs_handle_struct *handle,  enum SMB_QUOTA_TYPE qtype
 	(void) qtype;
 	(void) id;
 	(void) dq;
-        return 0;
+
+	errno = ENOSYS;
+        return -1;
 }
 
 static int gfvfs_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, BOOL labels)
@@ -273,7 +266,8 @@ static int gfvfs_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *f
         snprintf(errtmp, sizeof(errtmp), "gf2smb: get_shadow_copy_data");
         write(1, errtmp, strlen(errtmp));
 #endif
-        return 0;
+	errno = ENOSYS;
+        return -1;
 }
 
 static int gfvfs_statvfs(struct vfs_handle_struct *handle,  const char *path, struct vfs_statvfs_struct *statbuf)
@@ -323,7 +317,6 @@ static SMB_STRUCT_DIR *gfvfs_opendir(vfs_handle_struct *handle,  const char *fna
 		*/
 		errno = gfarm_error_to_errno(e);
 		return -1;
-		return (-gfarm_error_to_errno(e));
 	}
 	(void) handle;
 	(void) fname;
@@ -360,7 +353,6 @@ static SMB_STRUCT_DIRENT *gfvfs_readdir(vfs_handle_struct *handle,  SMB_STRUCT_D
 #endif
 		errno = gfarm_error_to_errno(e);
 		return -1;
-		
 	}
 	if(de!=NULL){
 #ifdef SDEBUG
@@ -403,7 +395,6 @@ static SMB_STRUCT_DIRENT *gfvfs_readdir(vfs_handle_struct *handle,  SMB_STRUCT_D
 
 	//return de;
 	return ssd;
-	return (0);
 }
 
 static void gfvfs_seekdir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp, long offset)
@@ -418,8 +409,11 @@ static void gfvfs_seekdir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp, long
 	GFS_Dir dp = dirp;
 	
 	e = gfs_seekdir(dp, offset);
-	errno = 0;
-	return 0;
+	if( e!= GFARM_ERR_NO_ERROR){
+		errno = gfarm_error_to_errno(e);
+		return -1;
+	}
+	return ;
 	
 }
 
@@ -431,12 +425,16 @@ static long gfvfs_telldir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
         snprintf(errtmp, sizeof(errtmp), "gf2smb: telldir");
         write(1, errtmp, strlen(errtmp));
 #endif
-	//errno=ENOSYS;
-	//return 0;
+	errno=ENOSYS;
+	return 0;
 
 	gfarm_error_t e;
 	long off;
 	e = gfs_telldir(dirp, &off);
+	if( e != GFARM_ERR_NO_ERROR){
+		errno = gfarm_error_to_errno(e);
+		return -1;
+	}
 	return(off);
 }
 
@@ -447,6 +445,8 @@ static void gfvfs_rewinddir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
         snprintf(errtmp, sizeof(errtmp), "gf2smb: rewinddir");
         write(1, errtmp, strlen(errtmp));
 #endif
+	errno = ENOSYS;
+	return -1;
 }
 
 static int gfvfs_mkdir(vfs_handle_struct *handle,  const char *path, mode_t mode)
@@ -459,8 +459,13 @@ static int gfvfs_mkdir(vfs_handle_struct *handle,  const char *path, mode_t mode
 	gfarm_error_t e;
 	
 	e = gfs_mkdir(path, mode & GFARM_S_ALLPERM);
+	if( e!= GFARM_ERR_NO_ERROR){
+		errno = gfarm_error_to_errno(e);
+		return -1;
+	}
 	//gfarm2fs_check_error(0, "MKDIR" , "gfs_mkdir", path, e);
-	return (-gfarm_error_to_errno(e));
+	//return (-gfarm_error_to_errno(e));
+	return 0;
 
 }
 
@@ -476,7 +481,11 @@ static int gfvfs_rmdir(vfs_handle_struct *handle,  const char *path)
 	e = gfs_rmdir(path);
 	//gfarm2fs_check_error(2000015, "RMDIR",
 	//			"gfs_rmdir", path, e);
-	return (-gfarm_error_to_errno(e));
+	if( e != GFARM_ERR_NO_ERROR){
+		errno = gfarm_error_to_errno(e);
+		return -1;
+	}
+	return 0;
 }
 
 static int gfvfs_closedir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dir)
@@ -492,6 +501,10 @@ static int gfvfs_closedir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dir)
 
 	//(void) path;
 	e = gfs_closedir(dp);
+	if( e != GFARM_ERR_NO_ERROR){
+		errno = gfarm_error_to_errno(e);
+		return -1;
+	}
 	//gfarm2fs_check_error(2000007, "RELEASEDIR",
 	//			"gfs_closedir", ""/*path*/, e);
 	return (0);
@@ -571,7 +584,10 @@ static int gfvfs_close(vfs_handle_struct *handle, files_struct *fsp, int fd)
 	//(void) path;
 	
 	e = gfs_pio_close((GFS_File)fsp->fh->file_id);
-	
+	if( e != GFARM_ERR_NO_ERROR){
+		errno = gfarm_error_to_errno(e);
+		return -1;
+	}
 	//gfarm2fs_check_error(2000033, "RELEASE",
 	//			"gfs_pio_close", ""/*path*/, e);
 	//gfarm2fs_replicate(path, fi);	//2010-04-15
@@ -593,6 +609,10 @@ static ssize_t gfvfs_read(vfs_handle_struct *handle, files_struct *fsp, int fd, 
                         //                                              "gfs_pio_seek", path, e);
         //} else {
                         e = gfs_pio_read((GFS_File)fsp->fh->file_id, (char *)data, n, &rv);
+			if( e != GFARM_ERR_NO_ERROR){
+				errno = gfarm_error_to_errno(e);
+				return -1;
+			}
                         //gfarm2fs_check_error(2000029, "READ",
                         //                                              "gfs_pio_read", path, e);
         //}
@@ -637,16 +657,19 @@ static ssize_t gfvfs_pread(vfs_handle_struct *handle, struct files_struct *fsp, 
 
 	e = gfs_pio_seek((GFS_File)fsp->fh->file_id, (off_t)offset, GFARM_SEEK_SET, &off);	//get_filep(fi)
 	if (e != GFARM_ERR_NO_ERROR) {
-			//gfarm2fs_check_error(2000028, "READ",
-			//						"gfs_pio_seek", path, e);
+		//gfarm2fs_check_error(2000028, "READ",
+		//						"gfs_pio_seek", path, e);
+		errno = gfarm_error_to_errno(e);
+		return -1;
 	} else {
-			e = gfs_pio_read((GFS_File)fsp->fh->file_id, data, n, &rv);
-			//gfarm2fs_check_error(2000029, "READ",
-			//						"gfs_pio_read", path, e);
+		e = gfs_pio_read((GFS_File)fsp->fh->file_id, data, n, &rv);
+		//gfarm2fs_check_error(2000029, "READ",
+		//						"gfs_pio_read", path, e);
 	}
 	
 	if (e != GFARM_ERR_NO_ERROR){
 			errno = gfarm_error_to_errno(e);
+			return -1;
 			rv = 0;
 	}
 	
@@ -672,9 +695,12 @@ static ssize_t gfvfs_write(vfs_handle_struct *handle, files_struct *fsp, int fd,
 	gfarm_error_t e;
 	int rv;
 	e = gfs_pio_write((GFS_File)fsp->fh->file_id, data, n, &rv);
+	if( e != GFARM_ERR_NO_ERROR){
+		errno = gfarm_error_to_errno(e);
+		return -1;
+	}
 	return rv;
 
-        return 0;
 }
 
 ssize_t gfvfs_pwrite(vfs_handle_struct *handle, struct files_struct *fsp, int fd, const void *data, size_t n, SMB_OFF_T offset)
@@ -693,19 +719,19 @@ ssize_t gfvfs_pwrite(vfs_handle_struct *handle, struct files_struct *fsp, int fd
 	if (e != GFARM_ERR_NO_ERROR) {
 		//gfarm2fs_check_error(GFARM_MSG_2000030, OP_WRITE,
 		//			"gfs_pio_seek", path, e);
+		errno = gfarm_error_to_errno(e);
+		return -1;
 	} else {
 		e = gfs_pio_write((GFS_File)fsp->fh->file_id, data, n, &rv);
 		//gfarm2fs_check_error(GFARM_MSG_2000031, OP_WRITE,
 		//			"gfs_pio_write", path, e);
 	}
 
-	if (e != GFARM_ERR_NO_ERROR)
-		rv = -gfarm_error_to_errno(e);
-
+	if (e != GFARM_ERR_NO_ERROR){
+		errno = gfarm_error_to_errno(e);
+		return -1;
+	}
 	return (rv);
-
-
-        return 0;
 }
 
 static SMB_OFF_T gfvfs_lseek(vfs_handle_struct *handle, files_struct *fsp, int filedes, SMB_OFF_T offset, int whence)
@@ -718,17 +744,15 @@ static SMB_OFF_T gfvfs_lseek(vfs_handle_struct *handle, files_struct *fsp, int f
 	gfarm_error_t e;
 	gfarm_off_t off;
 	e = gfs_pio_seek((GFS_File)fsp->fh->file_id, offset, GFARM_SEEK_SET, &off);
-	if (e != GFARM_ERR_NO_ERROR) {
-		/*gfarm2fs_check_error(GFARM_MSG_2000028, OP_READ,
-					"gfs_pio_seek", path, e);*/
+	if (e != GFARM_ERR_NO_ERROR){
 #ifdef SDEBUG
 		snprintf(errtmp, sizeof(errtmp), "gf2smb: lseek failed");
 		write(1, errtmp, strlen(errtmp));
 #endif
+		errno = gfarm_error_to_errno(e);
+		return -1;
 	}
 	return off;
-
-        return 0;
 }
 
 static int gfvfs_rename(vfs_handle_struct *handle,  const char *oldname, const char *newname)
@@ -790,7 +814,6 @@ static int gfvfs_stat(vfs_handle_struct *handle,  const char *fname, SMB_STRUCT_
 		errno = gfarm_error_to_errno(e);
 		//gfarm2fs_check_error(2000001, "GETATTR","gfs_lstat_cached", fname, e);
 		return -1;
-		return (gfarm_error_to_errno(e));
 	}
 
 	copy_gfs_stat(sbuf, &st);
@@ -823,7 +846,6 @@ static int gfvfs_fstat(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB
 		errno = gfarm_error_to_errno(e);
 		return -1;
 	}
-	errno = 0;
 	copy_gfs_stat(sbuf, &st);
 	gfs_stat_free(&st);
 
@@ -853,7 +875,6 @@ static int gfvfs_lstat(vfs_handle_struct *handle,  const char *path, SMB_STRUCT_
                 //gfarm2fs_check_error(2000001, "GETATTR",
                 //                      "gfs_lstat_cached", fname, e);
 		return -1;
-                return (gfarm_error_to_errno(e));
         }
 
         copy_gfs_stat(sbuf, &st);
@@ -874,9 +895,13 @@ static int gfvfs_unlink(vfs_handle_struct *handle,  const char *path)
 	gfarm_error_t e;
 
 	e = gfs_unlink(path);
+	if( e != GFARM_ERR_NO_ERROR){
+		errno = gfarm_error_to_errno(e);
+		return -1;
+	}
 	//gfarm2fs_check_error(GFARM_MSG_2000014, OP_UNLINK,
 	//			"gfs_unlink", path, e);
-	return (gfarm_error_to_errno(e));
+	return 0;
 
 }
 
@@ -910,7 +935,8 @@ static int gfvfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, mo
         write(1, errtmp, strlen(errtmp));
 #endif
 
-        return 0;
+	errno = ENOSYS;
+        return -1;
 }
 
 static int gfvfs_chown(vfs_handle_struct *handle,  const char *path, uid_t uid, gid_t gid)
@@ -921,7 +947,8 @@ static int gfvfs_chown(vfs_handle_struct *handle,  const char *path, uid_t uid, 
         write(1, errtmp, strlen(errtmp));
 #endif
 
-        return 0;
+	errno = ENOSYS;
+        return -1;
 }
 
 static int gfvfs_fchown(vfs_handle_struct *handle, files_struct *fsp, int fd, uid_t uid, gid_t gid)
@@ -933,7 +960,8 @@ static int gfvfs_fchown(vfs_handle_struct *handle, files_struct *fsp, int fd, ui
 #endif
 
 
-        return 0;
+	errno = ENOSYS;
+        return -1;
 }
 
 static int gfvfs_chdir(vfs_handle_struct *handle,  const char *path)
@@ -944,6 +972,7 @@ static int gfvfs_chdir(vfs_handle_struct *handle,  const char *path)
         write(1, errtmp, strlen(errtmp));
 #endif
 
+	errno = ENOSYS;
         return 0;
 }
 
@@ -954,7 +983,8 @@ static char *gfvfs_getwd(vfs_handle_struct *handle,  char *buf)
         snprintf(errtmp, sizeof(errtmp), "gf2smb: getwd");
         write(1, errtmp, strlen(errtmp));
 #endif
-        return 0;
+	errno = ENOSYS;
+        return -1;
 }
 
 static int gfvfs_ntimes(vfs_handle_struct *handle,  const char *path, const struct timespec ts[2])
@@ -965,7 +995,8 @@ static int gfvfs_ntimes(vfs_handle_struct *handle,  const char *path, const stru
         write(1, errtmp, strlen(errtmp));
 #endif
 
-        return 0;
+	errno = ENOSYS;
+        return -1;
 }
 
 static int gfvfs_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T offset)
@@ -978,7 +1009,10 @@ static int gfvfs_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int fd,
 
 	gfarm_error_t e;
 	e = gfs_pio_truncate((GFS_File)fsp->fh->file_id, /*offset*/0);
-
+	if( e != GFARM_ERR_NO_ERROR){
+		errno = gfarm_error_to_errno(e);
+		return -1;
+	}
 	//return( -gfarm_error_to_errno(e));
 
         return 0;
@@ -991,7 +1025,8 @@ static BOOL gfvfs_lock(vfs_handle_struct *handle, files_struct *fsp, int fd, int
         snprintf(errtmp, sizeof(errtmp), "gf2smb: lock");
         write(1, errtmp, strlen(errtmp));
 #endif
-        return 0;
+	errno = ENOSYS;
+        return -1;
 }
 
 static BOOL gfvfs_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
@@ -1001,7 +1036,8 @@ static BOOL gfvfs_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd, 
         snprintf(errtmp, sizeof(errtmp), "gf2smb: getlock");
         write(1, errtmp, strlen(errtmp));
 #endif
-        return 0;
+	errno = ENOSYS;
+        return -1;
 }
 
 static int gfvfs_symlink(vfs_handle_struct *handle,  const char *oldpath, const char *newpath)
@@ -1011,7 +1047,8 @@ static int gfvfs_symlink(vfs_handle_struct *handle,  const char *oldpath, const 
         snprintf(errtmp, sizeof(errtmp), "gf2smb: symlink");
         write(1, errtmp, strlen(errtmp));
 #endif
-        return 0;
+	errno = ENOSYS;
+        return -1;
 }
 
 
@@ -1022,8 +1059,8 @@ static int gfvfs_readlink(vfs_handle_struct *handle,  const char *path, char *bu
         snprintf(errtmp, sizeof(errtmp), "gf2smb: readlink");
         write(1, errtmp, strlen(errtmp));
 #endif
-
-        return 0;
+	errno = ENOSYS;
+        return -1;
 }
 
 static int gfvfs_link(vfs_handle_struct *handle,  const char *oldpath, const char *newpath)
@@ -1034,7 +1071,8 @@ static int gfvfs_link(vfs_handle_struct *handle,  const char *oldpath, const cha
         write(1, errtmp, strlen(errtmp));
 #endif
 
-        return 0;
+	errno = ENOSYS;
+        return -1;
 }
 
 static int gfvfs_mknod(vfs_handle_struct *handle,  const char *path, mode_t mode, SMB_DEV_T dev)
@@ -1046,7 +1084,8 @@ static int gfvfs_mknod(vfs_handle_struct *handle,  const char *path, mode_t mode
 #endif
 
 
-        return 0;
+	errno = ENOSYS;
+        return -1;
 }
 
 static char *gfvfs_realpath(vfs_handle_struct *handle,  const char *path, char *resolved_path)
@@ -1057,7 +1096,8 @@ static char *gfvfs_realpath(vfs_handle_struct *handle,  const char *path, char *
         write(1, errtmp, strlen(errtmp));
 #endif
 
-        return 0;
+	errno = ENOSYS;
+        return -1;
 }
 
 static NTSTATUS gfvfs_notify_watch(struct vfs_handle_struct *handle,
@@ -1071,6 +1111,7 @@ static NTSTATUS gfvfs_notify_watch(struct vfs_handle_struct *handle,
         write(1, errtmp, strlen(errtmp));
 #endif
 
+	errno = ENOSYS;
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
@@ -1095,7 +1136,7 @@ static size_t gfvfs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
         write(1, errtmp, strlen(errtmp));
 #endif
 	errno = ENOSYS;
-	return 0;
+	return -1;
 }
 
 static size_t gfvfs_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
@@ -1107,7 +1148,7 @@ static size_t gfvfs_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
         write(1, errtmp, strlen(errtmp));
 #endif
 	errno = ENOSYS;
-	return 0;
+	return -1;
 }
 
 
@@ -1480,6 +1521,7 @@ static int gfvfs_aio_read(struct vfs_handle_struct *handle, struct files_struct 
         write(1, errtmp, strlen(errtmp));
 #endif
 
+	errno = ENOSYS;
         return 0;
 }
 
@@ -1493,6 +1535,7 @@ static int gfvfs_aio_write(struct vfs_handle_struct *handle, struct files_struct
 #endif
 
 
+	errno = ENOSYS;
         return 0;
 }
 
@@ -1505,6 +1548,7 @@ static ssize_t gfvfs_aio_return(struct vfs_handle_struct *handle, struct files_s
         write(1, errtmp, strlen(errtmp));
 #endif
 
+	errno = ENOSYS;
         return 0;
 }
 
@@ -1517,6 +1561,7 @@ static int gfvfs_aio_cancel(struct vfs_handle_struct *handle, struct files_struc
         write(1, errtmp, strlen(errtmp));
 #endif
 
+	errno = ENOSYS;
         return 0;
 }
 
@@ -1529,6 +1574,7 @@ static int gfvfs_aio_error(struct vfs_handle_struct *handle, struct files_struct
 #endif
 
 
+	errno = ENOSYS;
         return 0;
 }
 
@@ -1541,6 +1587,7 @@ static int gfvfs_aio_fsync(struct vfs_handle_struct *handle, struct files_struct
 #endif
 
 
+	errno = ENOSYS;
         return 0;
 }
 
@@ -1554,6 +1601,7 @@ static int gfvfs_aio_suspend(struct vfs_handle_struct *handle, struct files_stru
 
 
 
+	errno = ENOSYS;
         return 0;
 }
 

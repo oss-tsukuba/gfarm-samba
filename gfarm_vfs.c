@@ -256,7 +256,7 @@ static int gfvfs_set_quota(vfs_handle_struct *handle,  enum SMB_QUOTA_TYPE qtype
 	(void) dq;
 
 	errno = ENOSYS;
-        return -1;
+        return 0;
 }
 
 static int gfvfs_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, BOOL labels)
@@ -267,7 +267,7 @@ static int gfvfs_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *f
         write(1, errtmp, strlen(errtmp));
 #endif
 	errno = ENOSYS;
-        return -1;
+        return 0;
 }
 
 static int gfvfs_statvfs(struct vfs_handle_struct *handle,  const char *path, struct vfs_statvfs_struct *statbuf)
@@ -446,7 +446,7 @@ static void gfvfs_rewinddir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
         write(1, errtmp, strlen(errtmp));
 #endif
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_mkdir(vfs_handle_struct *handle,  const char *path, mode_t mode)
@@ -936,7 +936,7 @@ static int gfvfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, mo
 #endif
 
 	errno = ENOSYS;
-        return -1;
+        return 0;
 }
 
 static int gfvfs_chown(vfs_handle_struct *handle,  const char *path, uid_t uid, gid_t gid)
@@ -948,7 +948,7 @@ static int gfvfs_chown(vfs_handle_struct *handle,  const char *path, uid_t uid, 
 #endif
 
 	errno = ENOSYS;
-        return -1;
+        return 0;
 }
 
 static int gfvfs_fchown(vfs_handle_struct *handle, files_struct *fsp, int fd, uid_t uid, gid_t gid)
@@ -961,7 +961,7 @@ static int gfvfs_fchown(vfs_handle_struct *handle, files_struct *fsp, int fd, ui
 
 
 	errno = ENOSYS;
-        return -1;
+        return 0;
 }
 
 static int gfvfs_chdir(vfs_handle_struct *handle,  const char *path)
@@ -984,7 +984,7 @@ static char *gfvfs_getwd(vfs_handle_struct *handle,  char *buf)
         write(1, errtmp, strlen(errtmp));
 #endif
 	errno = ENOSYS;
-        return -1;
+        return 0;
 }
 
 static int gfvfs_ntimes(vfs_handle_struct *handle,  const char *path, const struct timespec ts[2])
@@ -996,7 +996,7 @@ static int gfvfs_ntimes(vfs_handle_struct *handle,  const char *path, const stru
 #endif
 
 	errno = ENOSYS;
-        return -1;
+        return 0;
 }
 
 static int gfvfs_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T offset)
@@ -1026,7 +1026,7 @@ static BOOL gfvfs_lock(vfs_handle_struct *handle, files_struct *fsp, int fd, int
         write(1, errtmp, strlen(errtmp));
 #endif
 	errno = ENOSYS;
-        return -1;
+        return 0;
 }
 
 static BOOL gfvfs_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
@@ -1037,7 +1037,7 @@ static BOOL gfvfs_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd, 
         write(1, errtmp, strlen(errtmp));
 #endif
 	errno = ENOSYS;
-        return -1;
+        return 0;
 }
 
 static int gfvfs_symlink(vfs_handle_struct *handle,  const char *oldpath, const char *newpath)
@@ -1047,8 +1047,13 @@ static int gfvfs_symlink(vfs_handle_struct *handle,  const char *oldpath, const 
         snprintf(errtmp, sizeof(errtmp), "gf2smb: symlink");
         write(1, errtmp, strlen(errtmp));
 #endif
-	errno = ENOSYS;
-        return -1;
+	gfarm_error_t e;
+	e = gfs_symlink(oldpath, newpath);
+	if( e != GFARM_ERR_NO_ERROR){
+		errno = gfarm_error_to_errno(e);
+		return -1;
+	}
+        return 0;
 }
 
 
@@ -1060,7 +1065,7 @@ static int gfvfs_readlink(vfs_handle_struct *handle,  const char *path, char *bu
         write(1, errtmp, strlen(errtmp));
 #endif
 	errno = ENOSYS;
-        return -1;
+        return 0;
 }
 
 static int gfvfs_link(vfs_handle_struct *handle,  const char *oldpath, const char *newpath)
@@ -1072,7 +1077,7 @@ static int gfvfs_link(vfs_handle_struct *handle,  const char *oldpath, const cha
 #endif
 
 	errno = ENOSYS;
-        return -1;
+        return 0;
 }
 
 static int gfvfs_mknod(vfs_handle_struct *handle,  const char *path, mode_t mode, SMB_DEV_T dev)
@@ -1085,7 +1090,7 @@ static int gfvfs_mknod(vfs_handle_struct *handle,  const char *path, mode_t mode
 
 
 	errno = ENOSYS;
-        return -1;
+        return 0;
 }
 
 static char *gfvfs_realpath(vfs_handle_struct *handle,  const char *path, char *resolved_path)
@@ -1097,7 +1102,7 @@ static char *gfvfs_realpath(vfs_handle_struct *handle,  const char *path, char *
 #endif
 
 	errno = ENOSYS;
-        return -1;
+        return 0;
 }
 
 static NTSTATUS gfvfs_notify_watch(struct vfs_handle_struct *handle,
@@ -1124,7 +1129,7 @@ static int gfvfs_chflags(vfs_handle_struct *handle,  const char *path, uint flag
 #endif
 
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static size_t gfvfs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
@@ -1136,7 +1141,7 @@ static size_t gfvfs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
         write(1, errtmp, strlen(errtmp));
 #endif
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static size_t gfvfs_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
@@ -1148,7 +1153,7 @@ static size_t gfvfs_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
         write(1, errtmp, strlen(errtmp));
 #endif
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 
@@ -1187,7 +1192,7 @@ static int gfvfs_chmod_acl(vfs_handle_struct *handle,  const char *name, mode_t 
 #endif
 
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t mode)
@@ -1199,7 +1204,7 @@ static int gfvfs_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, int fd
 #endif
 
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_sys_acl_get_entry(vfs_handle_struct *handle,  SMB_ACL_T theacl, int entry_id, SMB_ACL_ENTRY_T *entry_p)
@@ -1211,7 +1216,7 @@ static int gfvfs_sys_acl_get_entry(vfs_handle_struct *handle,  SMB_ACL_T theacl,
 #endif
 
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_sys_acl_get_tag_type(vfs_handle_struct *handle,  SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p)
@@ -1223,7 +1228,7 @@ static int gfvfs_sys_acl_get_tag_type(vfs_handle_struct *handle,  SMB_ACL_ENTRY_
 #endif
 
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_sys_acl_get_permset(vfs_handle_struct *handle,  SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p)
@@ -1235,7 +1240,7 @@ static int gfvfs_sys_acl_get_permset(vfs_handle_struct *handle,  SMB_ACL_ENTRY_T
 #endif
 
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static void *gfvfs_sys_acl_get_qualifier(vfs_handle_struct *handle,  SMB_ACL_ENTRY_T entry_d)
@@ -1271,13 +1276,13 @@ static SMB_ACL_T gfvfs_sys_acl_get_fd(vfs_handle_struct *handle, files_struct *f
 static int gfvfs_sys_acl_clear_perms(vfs_handle_struct *handle,  SMB_ACL_PERMSET_T permset)
 {
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_sys_acl_add_perm(vfs_handle_struct *handle,  SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
 {
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static char *gfvfs_sys_acl_to_text(vfs_handle_struct *handle,  SMB_ACL_T theacl, ssize_t *plen)
@@ -1295,73 +1300,73 @@ static SMB_ACL_T gfvfs_sys_acl_init(vfs_handle_struct *handle,  int count)
 static int gfvfs_sys_acl_create_entry(vfs_handle_struct *handle,  SMB_ACL_T *pacl, SMB_ACL_ENTRY_T *pentry)
 {
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_sys_acl_set_tag_type(vfs_handle_struct *handle,  SMB_ACL_ENTRY_T entry, SMB_ACL_TAG_T tagtype)
 {
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_sys_acl_set_qualifier(vfs_handle_struct *handle,  SMB_ACL_ENTRY_T entry, void *qual)
 {
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_sys_acl_set_permset(vfs_handle_struct *handle,  SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset)
 {
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_sys_acl_valid(vfs_handle_struct *handle,  SMB_ACL_T theacl )
 {
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_sys_acl_set_file(vfs_handle_struct *handle,  const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 {
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_ACL_T theacl)
 {
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_sys_acl_delete_def_file(vfs_handle_struct *handle,  const char *path)
 {
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_sys_acl_get_perm(vfs_handle_struct *handle,  SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
 {
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_sys_acl_free_text(vfs_handle_struct *handle,  char *text)
 {
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_sys_acl_free_acl(vfs_handle_struct *handle,  SMB_ACL_T posix_acl)
 {
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_sys_acl_free_qualifier(vfs_handle_struct *handle,  void *qualifier, SMB_ACL_TAG_T tagtype)
 {
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static ssize_t gfvfs_getxattr(vfs_handle_struct *handle, const char *path, const char *name, void *value, size_t size)
@@ -1373,7 +1378,7 @@ static ssize_t gfvfs_getxattr(vfs_handle_struct *handle, const char *path, const
 #endif
 
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static ssize_t gfvfs_lgetxattr(vfs_handle_struct *handle, const char *path, const char *name, void *value, size_t
@@ -1386,7 +1391,7 @@ size)
 #endif
 
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static ssize_t gfvfs_fgetxattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name, void *value, size_t size)
@@ -1398,7 +1403,7 @@ static ssize_t gfvfs_fgetxattr(vfs_handle_struct *handle, struct files_struct *f
 #endif
 
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static ssize_t gfvfs_listxattr(vfs_handle_struct *handle, const char *path, char *list, size_t size)
@@ -1410,7 +1415,7 @@ static ssize_t gfvfs_listxattr(vfs_handle_struct *handle, const char *path, char
 #endif
 
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static ssize_t gfvfs_llistxattr(vfs_handle_struct *handle, const char *path, char *list, size_t size)
@@ -1422,7 +1427,7 @@ static ssize_t gfvfs_llistxattr(vfs_handle_struct *handle, const char *path, cha
 #endif
 
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static ssize_t gfvfs_flistxattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, char *list, size_t size)
@@ -1434,7 +1439,7 @@ static ssize_t gfvfs_flistxattr(vfs_handle_struct *handle, struct files_struct *
 #endif
 
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_removexattr(vfs_handle_struct *handle, const char *path, const char *name)
@@ -1447,7 +1452,7 @@ static int gfvfs_removexattr(vfs_handle_struct *handle, const char *path, const 
 
 
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_lremovexattr(vfs_handle_struct *handle, const char *path, const char *name)
@@ -1459,7 +1464,7 @@ static int gfvfs_lremovexattr(vfs_handle_struct *handle, const char *path, const
 #endif
 
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_fremovexattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name)
@@ -1472,7 +1477,7 @@ static int gfvfs_fremovexattr(vfs_handle_struct *handle, struct files_struct *fs
 
 
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_setxattr(vfs_handle_struct *handle, const char *path, const char *name, const void *value, size_t size, int flags)
@@ -1485,7 +1490,7 @@ static int gfvfs_setxattr(vfs_handle_struct *handle, const char *path, const cha
 
 
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_lsetxattr(vfs_handle_struct *handle, const char *path, const char *name, const void *value, size_t size, int flags)
@@ -1498,7 +1503,7 @@ static int gfvfs_lsetxattr(vfs_handle_struct *handle, const char *path, const ch
 
 
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name, const void *value, size_t size, int flags)
@@ -1510,7 +1515,7 @@ static int gfvfs_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp,i
 #endif
 
 	errno = ENOSYS;
-	return -1;
+	return 0;
 }
 
 static int gfvfs_aio_read(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)

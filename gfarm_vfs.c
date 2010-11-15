@@ -255,7 +255,7 @@ static int gfvfs_set_quota(vfs_handle_struct *handle,  enum SMB_QUOTA_TYPE qtype
 	(void) id;
 	(void) dq;
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
         return 0;
 }
 
@@ -266,7 +266,7 @@ static int gfvfs_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *f
         snprintf(errtmp, sizeof(errtmp), "gf2smb: get_shadow_copy_data");
         write(1, errtmp, strlen(errtmp));
 #endif
-	errno = ENOSYS;
+	//errno = ENOSYS;
         return 0;
 }
 
@@ -425,7 +425,7 @@ static long gfvfs_telldir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
         snprintf(errtmp, sizeof(errtmp), "gf2smb: telldir");
         write(1, errtmp, strlen(errtmp));
 #endif
-	errno=ENOSYS;
+	//errno=ENOSYS;
 	return 0;
 
 	gfarm_error_t e;
@@ -445,7 +445,7 @@ static void gfvfs_rewinddir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
         snprintf(errtmp, sizeof(errtmp), "gf2smb: rewinddir");
         write(1, errtmp, strlen(errtmp));
 #endif
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
@@ -935,7 +935,7 @@ static int gfvfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, mo
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
         return 0;
 }
 
@@ -947,7 +947,7 @@ static int gfvfs_chown(vfs_handle_struct *handle,  const char *path, uid_t uid, 
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
         return 0;
 }
 
@@ -960,7 +960,7 @@ static int gfvfs_fchown(vfs_handle_struct *handle, files_struct *fsp, int fd, ui
 #endif
 
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
         return 0;
 }
 
@@ -972,7 +972,7 @@ static int gfvfs_chdir(vfs_handle_struct *handle,  const char *path)
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
         return 0;
 }
 
@@ -983,7 +983,7 @@ static char *gfvfs_getwd(vfs_handle_struct *handle,  char *buf)
         snprintf(errtmp, sizeof(errtmp), "gf2smb: getwd");
         write(1, errtmp, strlen(errtmp));
 #endif
-	errno = ENOSYS;
+	//errno = ENOSYS;
         return 0;
 }
 
@@ -995,7 +995,7 @@ static int gfvfs_ntimes(vfs_handle_struct *handle,  const char *path, const stru
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
         return 0;
 }
 
@@ -1025,7 +1025,7 @@ static BOOL gfvfs_lock(vfs_handle_struct *handle, files_struct *fsp, int fd, int
         snprintf(errtmp, sizeof(errtmp), "gf2smb: lock");
         write(1, errtmp, strlen(errtmp));
 #endif
-	errno = ENOSYS;
+	//errno = ENOSYS;
         return 0;
 }
 
@@ -1036,7 +1036,7 @@ static BOOL gfvfs_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd, 
         snprintf(errtmp, sizeof(errtmp), "gf2smb: getlock");
         write(1, errtmp, strlen(errtmp));
 #endif
-	errno = ENOSYS;
+	//errno = ENOSYS;
         return 0;
 }
 
@@ -1064,7 +1064,7 @@ static int gfvfs_readlink(vfs_handle_struct *handle,  const char *path, char *bu
         snprintf(errtmp, sizeof(errtmp), "gf2smb: readlink");
         write(1, errtmp, strlen(errtmp));
 #endif
-	errno = ENOSYS;
+	//errno = ENOSYS;
         return 0;
 }
 
@@ -1076,7 +1076,7 @@ static int gfvfs_link(vfs_handle_struct *handle,  const char *oldpath, const cha
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
         return 0;
 }
 
@@ -1089,7 +1089,7 @@ static int gfvfs_mknod(vfs_handle_struct *handle,  const char *path, mode_t mode
 #endif
 
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
         return 0;
 }
 
@@ -1101,7 +1101,7 @@ static char *gfvfs_realpath(vfs_handle_struct *handle,  const char *path, char *
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
         return 0;
 }
 
@@ -1116,7 +1116,7 @@ static NTSTATUS gfvfs_notify_watch(struct vfs_handle_struct *handle,
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
@@ -1128,7 +1128,7 @@ static int gfvfs_chflags(vfs_handle_struct *handle,  const char *path, uint flag
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
@@ -1140,7 +1140,7 @@ static size_t gfvfs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
         snprintf(errtmp, sizeof(errtmp), "gf2smb: fget_nt_acl");
         write(1, errtmp, strlen(errtmp));
 #endif
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
@@ -1152,7 +1152,7 @@ static size_t gfvfs_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
         snprintf(errtmp, sizeof(errtmp), "gf2smb: get_nt_acl");
         write(1, errtmp, strlen(errtmp));
 #endif
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
@@ -1166,7 +1166,7 @@ static BOOL gfvfs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int
         snprintf(errtmp, sizeof(errtmp), "gf2smb: fset_nt_acl");
         write(1, errtmp, strlen(errtmp));
 #endif
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return False;
 }
 
@@ -1179,7 +1179,7 @@ static BOOL gfvfs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp, const
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return False;
 }
 
@@ -1191,7 +1191,7 @@ static int gfvfs_chmod_acl(vfs_handle_struct *handle,  const char *name, mode_t 
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
@@ -1203,7 +1203,7 @@ static int gfvfs_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, int fd
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
@@ -1215,7 +1215,7 @@ static int gfvfs_sys_acl_get_entry(vfs_handle_struct *handle,  SMB_ACL_T theacl,
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
@@ -1227,7 +1227,7 @@ static int gfvfs_sys_acl_get_tag_type(vfs_handle_struct *handle,  SMB_ACL_ENTRY_
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
@@ -1239,7 +1239,7 @@ static int gfvfs_sys_acl_get_permset(vfs_handle_struct *handle,  SMB_ACL_ENTRY_T
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
@@ -1251,7 +1251,7 @@ static void *gfvfs_sys_acl_get_qualifier(vfs_handle_struct *handle,  SMB_ACL_ENT
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return NULL;
 }
 
@@ -1263,109 +1263,109 @@ static SMB_ACL_T gfvfs_sys_acl_get_file(vfs_handle_struct *handle,  const char *
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return NULL;
 }
 
 static SMB_ACL_T gfvfs_sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp, int fd)
 {
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return NULL;
 }
 
 static int gfvfs_sys_acl_clear_perms(vfs_handle_struct *handle,  SMB_ACL_PERMSET_T permset)
 {
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
 static int gfvfs_sys_acl_add_perm(vfs_handle_struct *handle,  SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
 {
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
 static char *gfvfs_sys_acl_to_text(vfs_handle_struct *handle,  SMB_ACL_T theacl, ssize_t *plen)
 {
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return NULL;
 }
 
 static SMB_ACL_T gfvfs_sys_acl_init(vfs_handle_struct *handle,  int count)
 {
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return NULL;
 }
 
 static int gfvfs_sys_acl_create_entry(vfs_handle_struct *handle,  SMB_ACL_T *pacl, SMB_ACL_ENTRY_T *pentry)
 {
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
 static int gfvfs_sys_acl_set_tag_type(vfs_handle_struct *handle,  SMB_ACL_ENTRY_T entry, SMB_ACL_TAG_T tagtype)
 {
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
 static int gfvfs_sys_acl_set_qualifier(vfs_handle_struct *handle,  SMB_ACL_ENTRY_T entry, void *qual)
 {
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
 static int gfvfs_sys_acl_set_permset(vfs_handle_struct *handle,  SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset)
 {
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
 static int gfvfs_sys_acl_valid(vfs_handle_struct *handle,  SMB_ACL_T theacl )
 {
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
 static int gfvfs_sys_acl_set_file(vfs_handle_struct *handle,  const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
 {
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
 static int gfvfs_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_ACL_T theacl)
 {
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
 static int gfvfs_sys_acl_delete_def_file(vfs_handle_struct *handle,  const char *path)
 {
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
 static int gfvfs_sys_acl_get_perm(vfs_handle_struct *handle,  SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm)
 {
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
 static int gfvfs_sys_acl_free_text(vfs_handle_struct *handle,  char *text)
 {
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
 static int gfvfs_sys_acl_free_acl(vfs_handle_struct *handle,  SMB_ACL_T posix_acl)
 {
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
 static int gfvfs_sys_acl_free_qualifier(vfs_handle_struct *handle,  void *qualifier, SMB_ACL_TAG_T tagtype)
 {
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
@@ -1377,7 +1377,7 @@ static ssize_t gfvfs_getxattr(vfs_handle_struct *handle, const char *path, const
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
@@ -1390,7 +1390,7 @@ size)
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
@@ -1402,7 +1402,7 @@ static ssize_t gfvfs_fgetxattr(vfs_handle_struct *handle, struct files_struct *f
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
@@ -1414,7 +1414,7 @@ static ssize_t gfvfs_listxattr(vfs_handle_struct *handle, const char *path, char
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
@@ -1426,7 +1426,7 @@ static ssize_t gfvfs_llistxattr(vfs_handle_struct *handle, const char *path, cha
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
@@ -1438,7 +1438,7 @@ static ssize_t gfvfs_flistxattr(vfs_handle_struct *handle, struct files_struct *
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
@@ -1451,7 +1451,7 @@ static int gfvfs_removexattr(vfs_handle_struct *handle, const char *path, const 
 #endif
 
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
@@ -1463,7 +1463,7 @@ static int gfvfs_lremovexattr(vfs_handle_struct *handle, const char *path, const
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
@@ -1476,7 +1476,7 @@ static int gfvfs_fremovexattr(vfs_handle_struct *handle, struct files_struct *fs
 #endif
 
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
@@ -1489,7 +1489,7 @@ static int gfvfs_setxattr(vfs_handle_struct *handle, const char *path, const cha
 #endif
 
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
@@ -1502,7 +1502,7 @@ static int gfvfs_lsetxattr(vfs_handle_struct *handle, const char *path, const ch
 #endif
 
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
@@ -1514,7 +1514,7 @@ static int gfvfs_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp,i
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
 	return 0;
 }
 
@@ -1526,7 +1526,7 @@ static int gfvfs_aio_read(struct vfs_handle_struct *handle, struct files_struct 
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
         return 0;
 }
 
@@ -1540,7 +1540,7 @@ static int gfvfs_aio_write(struct vfs_handle_struct *handle, struct files_struct
 #endif
 
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
         return 0;
 }
 
@@ -1553,7 +1553,7 @@ static ssize_t gfvfs_aio_return(struct vfs_handle_struct *handle, struct files_s
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
         return 0;
 }
 
@@ -1566,7 +1566,7 @@ static int gfvfs_aio_cancel(struct vfs_handle_struct *handle, struct files_struc
         write(1, errtmp, strlen(errtmp));
 #endif
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
         return 0;
 }
 
@@ -1579,7 +1579,7 @@ static int gfvfs_aio_error(struct vfs_handle_struct *handle, struct files_struct
 #endif
 
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
         return 0;
 }
 
@@ -1592,7 +1592,7 @@ static int gfvfs_aio_fsync(struct vfs_handle_struct *handle, struct files_struct
 #endif
 
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
         return 0;
 }
 
@@ -1606,7 +1606,7 @@ static int gfvfs_aio_suspend(struct vfs_handle_struct *handle, struct files_stru
 
 
 
-	errno = ENOSYS;
+	//errno = ENOSYS;
         return 0;
 }
 

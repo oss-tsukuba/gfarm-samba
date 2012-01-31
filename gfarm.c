@@ -1589,6 +1589,6 @@ struct vfs_fn_pointers gfvfs_transparent_fns = {
 
 NTSTATUS init_samba_module(void)
 {
-	return (smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "gfarm_vfs",
+	return (smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "gfarm",
 	    &gfvfs_transparent_fns));
 }

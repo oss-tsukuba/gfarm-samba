@@ -1,47 +1,49 @@
-Gfarm Samba VFS module v0.0.1
---------------------
+		Gfarm Samba VFS module v0.0.2
 
-INSTALL
+This module is a Gfarm module for samba that enables to access
+the Gfarm file system.  This module is tested using samba-3.6.2
+and Gfarm-2.5.4.
+
+How to Install
+--------------
 
 Before building this vfs module, you need to get source code of samba
-and install gfarm-devel package or put the gfarm source code to
-include directory.
+and install gfarm-devel package.
 
-- Preparing samba header files
-Move to samba source code directory and run "configure.developer" script.
-Then, type "make."  "make install" is not necessary at this time.
------
-$cd samba-3.x.x/source3		# SAMBA_SOURCE_DIRECTORY
+- Preparation of samba header files
+
+Execute "configure.developer" script in the samba source directory,
+and, execute "make"  "make install" is not necessary at this time.
+
+$ cd samba-3.x.x/source3		# SAMBA_SOURCE_DIRECTORY
 $ ./configure.developer
-$ su 
-# make
------
-
-- Compile the Gfarm Samba VFS Module
-Execute following commands in the Samba VFS Module directory.
------
-$ ./configure --with-samba-source=SAMBA_SOURCE_DIRECTORY
 $ make
------
 
-- Install the Gfarm Samba VFS Module
-Next, copy gfarm_vfs.so to samba vfs directory as a super user.
-(The directory is "/usr/lib64/samba/vfs" in RHEL5 x86_64.)
+- Compilation and installation of the Gfarm Samba VFS Module
 
-# cp gfarm_vfs.so SAMBA_VFS_DIRECTORY
+Execute following commands in the Samba VFS Module directory.
+
+$ ./configure --with-samba=SAMBA_SOURCE_DIRECTORY \
+	--with-gfarm=GFARM_INSTALL_DIRECTORY \
+	--prefix=SAMBA_INSTALL_DIRECTORY
+$ make
+# sudo make install
+
+"make install" installs the gfarm samba module in $libdir/vfs.
+You may need to change the $libdir if required.  In RHEL5
+x64_64 case, the install directory is "/usr/lib64/samba/vfs".
+
+- Configuration to use the Gfarm Samba VFS Module
 
 Add following settings to smb.conf:
------
+
 [gfarm]
-        comment = Gfarm FS
-        path = /
-        vfs objects = gfarm_vfs
-        writeable = yes
-        browseable = yes
------
+	comment = Gfarm FS
+	path = /
+	vfs objects = gfarm
+	writeable = yes
+	browseable = yes
 
 Restart samba and access \\sambahostname\gfarm with windows explorer.
 
-
 29 Dec 2010 Hiroki Ohtsuji
-

@@ -1,18 +1,18 @@
-/* 
+/*
  * Gfarm Samba VFS module.
  * v0.0.1 03 Sep 2010  Hiroki Ohtsuji <ohtsuji at hpcs.cs.tsukuba.ac.jp>
  * Copyright (c) 2012 Osamu Tatebe.  All Rights Reserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- *  
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *  
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -131,7 +131,7 @@ static int
 switch_user(const char *user)
 {
 	struct passwd *pwd = getpwnam(user);
-	
+
 	if (pwd != NULL)
 		return (seteuid(pwd->pw_uid));
 	return (-1);
@@ -143,7 +143,7 @@ gfvfs_connect(vfs_handle_struct *handle, const char *service,
 {
 	gfarm_error_t e;
 	uid_t uid = getuid();
-	
+
 	gflog_debug(GFARM_MSG_UNFIXED, "connect: service %s, user %s",
 	    service, user);
 	if (uid == 0)
@@ -323,7 +323,7 @@ gfvfs_seekdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp, long offset)
 #if 0 /* libgfarm does not implement yet */
 static long
 gfvfs_telldir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
-{       
+{
 	gfarm_off_t off;
 	GFS_Dir dp = (GFS_Dir)dirp;
 	gfarm_error_t e;
@@ -394,8 +394,8 @@ gfvfs_open(vfs_handle_struct *handle, struct smb_filename *smb_fname,
 	GFS_Dir dp;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "open: path %s, flags %x, mode %o, is_dir %d",
-	    fname, flags, mode, fsp->is_directory);
+	gflog_debug(GFARM_MSG_UNFIXED, "open: path %s, flags %x, mode %o, "
+	    "is_dir %d", fname, flags, mode, fsp->is_directory);
 	if (g_flags < 0) {
 		gflog_error(GFARM_MSG_UNFIXED, "open: %s", strerror(EINVAL));
 		errno = EINVAL;
@@ -653,27 +653,27 @@ gfvfs_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 	}
 	copy_gfs_stat(path, sbuf, &st);
 	gfs_stat_free(&st);
-        return (0);
+	return (0);
 }
 
 static int
 gfvfs_lstat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
 {
-        struct gfs_stat st;
+	struct gfs_stat st;
 	const char *fname = smb_fname->base_name;
-        gfarm_error_t e;
+	gfarm_error_t e;
 
 	gflog_debug(GFARM_MSG_UNFIXED, "lstat: path %s", fname);
 	e = gfs_lstat(fname, &st);
-        if (e != GFARM_ERR_NO_ERROR) {
+	if (e != GFARM_ERR_NO_ERROR) {
 		gflog_error(GFARM_MSG_UNFIXED, "gfs_lstat: %s",
 		    gfarm_error_string(e));
 		errno = gfarm_error_to_errno(e);
 		return (-1);
-        }
-        copy_gfs_stat(fname, &smb_fname->st, &st);
-        gfs_stat_free(&st);
-        return (0);
+	}
+	copy_gfs_stat(fname, &smb_fname->st, &st);
+	gfs_stat_free(&st);
+	return (0);
 }
 
 static int
@@ -799,7 +799,7 @@ gfvfs_lock(vfs_handle_struct *handle, files_struct *fsp, int op,
 	SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
 	gflog_debug(GFARM_MSG_UNFIXED, "lock: op %d, offset %ld, "
-	    "count %ld, type %d", op, (long)offset, (long)count, type); 
+	    "count %ld, type %d", op, (long)offset, (long)count, type);
 	gflog_error(GFARM_MSG_UNFIXED, "lock: %s", strerror(ENOSYS));
 	errno = ENOSYS;
 	return (false);
@@ -1379,7 +1379,7 @@ gfvfs_aio_read(struct vfs_handle_struct *handle, struct files_struct *fsp,
 {
 	gflog_debug(GFARM_MSG_UNFIXED, "aio_read");
 	gflog_error(GFARM_MSG_UNFIXED, "aio_read: %s", strerror(ENOSYS));
-        errno = ENOSYS;
+	errno = ENOSYS;
 	return (-1);
 }
 
@@ -1389,7 +1389,7 @@ gfvfs_aio_write(struct vfs_handle_struct *handle, struct files_struct *fsp,
 {
 	gflog_debug(GFARM_MSG_UNFIXED, "aio_write");
 	gflog_error(GFARM_MSG_UNFIXED, "aio_write: %s", strerror(ENOSYS));
-        errno = ENOSYS;
+	errno = ENOSYS;
 	return (-1);
 }
 
@@ -1409,7 +1409,7 @@ gfvfs_aio_cancel(struct vfs_handle_struct *handle,
 {
 	gflog_debug(GFARM_MSG_UNFIXED, "aio_cancel");
 	gflog_error(GFARM_MSG_UNFIXED, "aio_cancel: %s", strerror(ENOSYS));
-        errno = ENOSYS;
+	errno = ENOSYS;
 	return (-1);
 }
 
@@ -1419,7 +1419,7 @@ gfvfs_aio_error_fn(struct vfs_handle_struct *handle,
 {
 	gflog_debug(GFARM_MSG_UNFIXED, "aio_error_fn");
 	gflog_error(GFARM_MSG_UNFIXED, "aio_error_fn: %s", strerror(ENOSYS));
-        errno = ENOSYS;
+	errno = ENOSYS;
 	return (-1);
 }
 
@@ -1429,7 +1429,7 @@ gfvfs_aio_fsync(struct vfs_handle_struct *handle, struct files_struct *fsp,
 {
 	gflog_debug(GFARM_MSG_UNFIXED, "aio_fsync");
 	gflog_error(GFARM_MSG_UNFIXED, "aio_fsync: %s", strerror(ENOSYS));
-        errno = ENOSYS;
+	errno = ENOSYS;
 	return (-1);
 }
 
@@ -1440,7 +1440,7 @@ gfvfs_aio_suspend(struct vfs_handle_struct *handle, struct files_struct *fsp,
 {
 	gflog_debug(GFARM_MSG_UNFIXED, "aio_suspend");
 	gflog_error(GFARM_MSG_UNFIXED, "aio_suspend: %s", strerror(ENOSYS));
-        errno = ENOSYS;
+	errno = ENOSYS;
 	return (-1);
 }
 

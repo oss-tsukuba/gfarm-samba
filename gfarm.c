@@ -431,6 +431,7 @@ gfvfs_open(vfs_handle_struct *handle, struct smb_filename *smb_fname,
 }
 
 /* this function is required to create a file from NT SMB */
+#if 0 /* not implemented yet */
 static NTSTATUS
 gfvfs_create_file(struct vfs_handle_struct *handle, struct smb_request *req,
 	uint16_t root_dir_fid, struct smb_filename *smb_fname,
@@ -445,6 +446,7 @@ gfvfs_create_file(struct vfs_handle_struct *handle, struct smb_request *req,
 	gflog_error(GFARM_MSG_UNFIXED, "create_file: not implemented");
 	return (NT_STATUS_NOT_IMPLEMENTED);
 }
+#endif
 
 static int
 gfvfs_close_fn(vfs_handle_struct *handle, files_struct *fsp)
@@ -765,6 +767,7 @@ gfvfs_getwd(vfs_handle_struct *handle, char *buf)
 	return (NULL);
 }
 
+#if 0 /* not implemented yet */
 static int
 gfvfs_ntimes(vfs_handle_struct *handle, const struct smb_filename *smb_fname,
 	struct smb_file_time *ft)
@@ -774,6 +777,7 @@ gfvfs_ntimes(vfs_handle_struct *handle, const struct smb_filename *smb_fname,
 	errno = ENOSYS;
 	return (-1);
 }
+#endif
 
 static int
 gfvfs_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T offset)
@@ -968,6 +972,7 @@ gfvfs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 /* this function is required to create a file from NT SMB */
+#if 0 /* not implemented yet */
 static NTSTATUS
 gfvfs_get_nt_acl(vfs_handle_struct *handle, const char *name,
 	uint32 security_info, struct security_descriptor **ppdesc)
@@ -976,6 +981,7 @@ gfvfs_get_nt_acl(vfs_handle_struct *handle, const char *name,
 	gflog_error(GFARM_MSG_UNFIXED, "get_nt_acl: not implemented");
 	return (NT_STATUS_NOT_IMPLEMENTED);
 }
+#endif
 
 static NTSTATUS
 gfvfs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
@@ -1051,6 +1057,7 @@ gfvfs_sys_acl_get_qualifier(vfs_handle_struct *handle,
 }
 
 /* this function is required to create a file from NT SMB */
+#if 0 /* not implemented yet */
 static SMB_ACL_T
 gfvfs_sys_acl_get_file(vfs_handle_struct *handle, const char *path_p,
 	SMB_ACL_TYPE_T type)
@@ -1061,6 +1068,7 @@ gfvfs_sys_acl_get_file(vfs_handle_struct *handle, const char *path_p,
 	errno = ENOSYS;
 	return (NULL);
 }
+#endif
 
 static SMB_ACL_T
 gfvfs_sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp)

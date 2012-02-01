@@ -37,7 +37,6 @@
 #include <gfarm/gfarm.h>
 
 /* internal interface */
-char *gfs_pio_url(GFS_File);
 gfarm_error_t gfs_statdir(GFS_Dir, struct gfs_stat *);
 
 /* XXX FIXME */
@@ -622,28 +621,23 @@ gfvfs_stat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
 	return (0);
 }
 
-/*
- * XXXXX - fsp may be a directory.  gfs_pio_url cannot be used
- * for a directory
- */
 static int
 gfvfs_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 {
 	struct gfs_stat st;
 	GFS_File gf;
-	char *path, *msg;
+	char *msg;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "fstat: is_dir %d", fsp->is_directory);
+	gflog_debug(GFARM_MSG_UNFIXED, "fstat: is_dir %d, path %s",
+	    fsp->is_directory, fsp->fsp_name->base_name);
 	if (!fsp->is_directory) {
 		msg = "gfs_pio_stat";
 		gf = (GFS_File)fsp->fh->gen_id;
 		e = gfs_pio_stat(gf, &st);
-		path = gfs_pio_url(gf);
 	} else {
 		msg = "gfs_statdir";
 		e = gfs_statdir((GFS_Dir)fsp->fh->gen_id, &st);
-		path = "/";
 	}
 	if (e != GFARM_ERR_NO_ERROR) {
 		gflog_error(GFARM_MSG_UNFIXED, "%s: %s", msg,
@@ -651,7 +645,7 @@ gfvfs_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 		errno = gfarm_error_to_errno(e);
 		return (-1);
 	}
-	copy_gfs_stat(path, sbuf, &st);
+	copy_gfs_stat(fsp->fsp_name->base_name, sbuf, &st);
 	gfs_stat_free(&st);
 	return (0);
 }

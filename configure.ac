@@ -42,7 +42,7 @@ AC_MSG_RESULT([$SAMBA])
 
 # Checks for libraries.
 AC_CHECK_LIB([gfarm], [gfarm_initialize],, [AC_MSG_ERROR([libgfarm not found.  Use --with-gfarm option])])
-AC_CHECK_LIB([gfarm], [gfs_pio_url],, [AC_MSG_ERROR([Gfarm-2.5.4 or later is required])])
+AC_CHECK_LIB([gfarm], [gfs_statdir],, [AC_MSG_ERROR([Gfarm-2.5.4 or later is required])])
 
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h unistd.h])

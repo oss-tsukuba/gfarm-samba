@@ -37,6 +37,7 @@
 #include <gfarm/gfarm.h>
 
 /* internal interface */
+int gfs_pio_fileno(GFS_File);
 gfarm_error_t gfs_statdir(GFS_Dir, struct gfs_stat *);
 
 /* XXX FIXME */
@@ -248,18 +249,35 @@ gfvfs_fs_capabilities(struct vfs_handle_struct *handle,
 	return (0);
 }
 
+struct gfvfs_dir {
+	GFS_Dir dp;
+	char *path;
+};
+
 static SMB_STRUCT_DIR *
 gfvfs_opendir(vfs_handle_struct *handle, const char *fname,
 	const char *mask, uint32 attr)
 {
 	GFS_Dir dp;
+	struct gfvfs_dir *gdp;
 	gfarm_error_t e;
 
 	gflog_debug(GFARM_MSG_UNFIXED, "opendir: path %s, mask %s",
 	    fname, mask);
 	e = gfs_opendir_caching(fname, &dp);
-	if (e == GFARM_ERR_NO_ERROR)
-		return ((SMB_STRUCT_DIR *)dp);
+	if (e == GFARM_ERR_NO_ERROR) {
+		GFARM_MALLOC(gdp);
+		if (gdp != NULL)
+			gdp->path = strdup(fname);
+		if (gdp == NULL || gdp->path == NULL) {
+			gflog_error(GFARM_MSG_UNFIXED, "opendir: no memory");
+			free(gdp);
+			gfs_closedir(dp);
+			return (NULL);
+		}
+		gdp->dp = dp;
+		return ((SMB_STRUCT_DIR *)gdp);
+	}
 	gflog_error(GFARM_MSG_UNFIXED, "gfs_opendir: %s",
 	    gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
@@ -279,13 +297,19 @@ static SMB_STRUCT_DIRENT *
 gfvfs_readdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp,
 	SMB_STRUCT_STAT *sbuf)
 {
-	GFS_Dir dp = (GFS_Dir)dirp;
+	struct gfvfs_dir *gdp = (struct gfvfs_dir *)dirp;
 	struct gfs_dirent *de;
 	static SMB_STRUCT_DIRENT ssd;
+	struct gfs_stat st;
+	char *path;
+	size_t len;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "readdir");
-	e = gfs_readdir(dp, &de);
+	gflog_debug(GFARM_MSG_UNFIXED, "readdir: dir %p", dirp);
+	if (sbuf)
+		SET_STAT_INVALID(*sbuf);
+
+	e = gfs_readdir(gdp->dp, &de);
 	if (e != GFARM_ERR_NO_ERROR) {
 		gflog_error(GFARM_MSG_UNFIXED, "gfs_readdir: %s",
 		    gfarm_error_string(e));
@@ -295,22 +319,37 @@ gfvfs_readdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp,
 	if (de == NULL)
 		return (NULL);
 
+	gflog_debug(GFARM_MSG_UNFIXED, "readdir: name %s", de->d_name);
 	ssd.d_ino = de->d_fileno;
 	ssd.d_reclen = de->d_reclen;
 	ssd.d_type = de->d_type;
 	ssd.d_off = 0;
 	strncpy(ssd.d_name, de->d_name, sizeof(ssd.d_name));
+	if (sbuf) {
+		len = strlen(gdp->path) + strlen(de->d_name) + 2;
+		GFARM_MALLOC_ARRAY(path, len);
+		if (path == NULL)
+			return (&ssd);
+		snprintf(path, len, "%s/%s", gdp->path, de->d_name);
+		gflog_debug(GFARM_MSG_UNFIXED, "lstat: path %s", path);
+		e = gfs_lstat_cached(path, &st);
+		if (e == GFARM_ERR_NO_ERROR) {
+			copy_gfs_stat(path, sbuf, &st);
+			gfs_stat_free(&st);
+		}
+		free(path);
+	}
 	return (&ssd);
 }
 
 static void
 gfvfs_seekdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp, long offset)
 {
-	GFS_Dir dp = (GFS_Dir)dirp;
+	struct gfvfs_dir *gdp = (struct gfvfs_dir *)dirp;
 	gfarm_error_t e;
 
 	gflog_debug(GFARM_MSG_UNFIXED, "seekdir: offset %ld", offset);
-	e = gfs_seekdir(dp, offset);
+	e = gfs_seekdir(gdp->dp, offset);
 	if (e != GFARM_ERR_NO_ERROR) {
 		gflog_error(GFARM_MSG_UNFIXED, "gfs_seekdir: %s",
 		    gfarm_error_string(e));
@@ -324,11 +363,11 @@ static long
 gfvfs_telldir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
 {
 	gfarm_off_t off;
-	GFS_Dir dp = (GFS_Dir)dirp;
+	struct gfvfs_dir *gdp = (struct gfvfs_dir *)dirp;
 	gfarm_error_t e;
 
 	gflog_debug(GFARM_MSG_UNFIXED, "telldir");
-	e = gfs_telldir(dp, &off);
+	e = gfs_telldir(gdp->dp, &off);
 	if (e != GFARM_ERR_NO_ERROR) {
 		gflog_error(GFARM_MSG_UNFIXED, "gfs_telldir: %s",
 		    gfarm_error_string(e));
@@ -339,6 +378,29 @@ gfvfs_telldir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
 }
 #endif
 
+static void
+gfvfs_rewind_dir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
+{
+	gflog_debug(GFARM_MSG_UNFIXED, "rewind_dir: dir %p", dirp);
+	return;
+}
+
+static void
+uncache_parent(const char *path)
+{
+	char *p = gfarm_url_dir(path);
+
+	if (p == NULL) {
+		gflog_error(GFARM_MSG_UNFIXED, "uncache_parent(%s): no memory",
+		    path);
+		return;
+	}
+	gflog_debug(GFARM_MSG_UNFIXED, "uncache_parent: parent %s, path %s",
+	    p, path);
+	gfs_stat_cache_purge(p);
+	free(p);
+}
+
 static int
 gfvfs_mkdir(vfs_handle_struct *handle, const char *path, mode_t mode)
 {
@@ -346,8 +408,10 @@ gfvfs_mkdir(vfs_handle_struct *handle, const char *path, mode_t mode)
 
 	gflog_debug(GFARM_MSG_UNFIXED, "mkdir: path %s, mode %o", path, mode);
 	e = gfs_mkdir(path, mode & GFARM_S_ALLPERM);
-	if (e == GFARM_ERR_NO_ERROR)
+	if (e == GFARM_ERR_NO_ERROR) {
+		uncache_parent(path);
 		return (0);
+	}
 	gflog_error(GFARM_MSG_UNFIXED, "gfs_mkdir: %s", gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (-1);
@@ -360,8 +424,11 @@ gfvfs_rmdir(vfs_handle_struct *handle, const char *path)
 
 	gflog_debug(GFARM_MSG_UNFIXED, "rmdir: path %s", path);
 	e = gfs_rmdir(path);
-	if (e == GFARM_ERR_NO_ERROR)
+	if (e == GFARM_ERR_NO_ERROR) {
+		gfs_stat_cache_purge(path);
+		uncache_parent(path);
 		return (0);
+	}
 	gflog_error(GFARM_MSG_UNFIXED, "gfs_rmdir: %s", gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (-1);
@@ -370,17 +437,25 @@ gfvfs_rmdir(vfs_handle_struct *handle, const char *path)
 static int
 gfvfs_closedir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dir)
 {
-	GFS_Dir dp = (GFS_Dir)dir;
+	struct gfvfs_dir *gdp = (struct gfvfs_dir *)dir;
 	gfarm_error_t e;
 
 	gflog_debug(GFARM_MSG_UNFIXED, "closedir");
-	e = gfs_closedir(dp);
+	e = gfs_closedir(gdp->dp);
+	free(gdp);
 	if (e == GFARM_ERR_NO_ERROR)
 		return (0);
 	gflog_error(GFARM_MSG_UNFIXED, "gfs_closedir: %s",
 	    gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (-1);
+}
+
+static void
+gfvfs_init_search_op(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
+{
+	gflog_debug(GFARM_MSG_UNFIXED, "init_search_op: dir %p", dirp);
+	return;
 }
 
 static int
@@ -391,6 +466,7 @@ gfvfs_open(vfs_handle_struct *handle, struct smb_filename *smb_fname,
 	char *fname = smb_fname->base_name, *msg;
 	GFS_File gf;
 	GFS_Dir dp;
+	struct gfvfs_dir *gdp;
 	gfarm_error_t e;
 
 	gflog_debug(GFARM_MSG_UNFIXED, "open: path %s, flags %x, mode %o, "
@@ -417,16 +493,33 @@ gfvfs_open(vfs_handle_struct *handle, struct smb_filename *smb_fname,
 		errno = gfarm_error_to_errno(e);
 		return (-1);
 	}
+	if (flags & O_CREAT)
+		uncache_parent(fname);
+	else
+		gfs_stat_cache_purge(fname);
 	/*
 	 * XXX - gen_id is assigned in files.c as a unique number
 	 * identifying this fsp over the life of this pid.  I guess it
 	 * is safe to use to store GFS_File.
 	 */
-	if (fsp->is_directory)
-		fsp->fh->gen_id = (unsigned long)dp;
-	else
+	if (fsp->is_directory) {
+		GFARM_MALLOC(gdp);
+		if (gdp != NULL)
+			gdp->path = strdup(fname);
+		if (gdp == NULL || gdp->path == NULL) {
+			gflog_error(GFARM_MSG_UNFIXED, "open: no memory");
+			free(gdp);
+			gfs_closedir(dp);
+			errno = ENOMEM;
+			return (-1);
+		}
+		gdp->dp = dp;
+		fsp->fh->gen_id = (unsigned long)gdp;
+		return (0); /* dummy */
+	} else {
 		fsp->fh->gen_id = (unsigned long)gf;
-	return (0);
+		return (gfs_pio_fileno(gf)); /* although do not use this */
+	}
 }
 
 /* this function is required to create a file from NT SMB */
@@ -459,7 +552,8 @@ gfvfs_close_fn(vfs_handle_struct *handle, files_struct *fsp)
 		e = gfs_pio_close((GFS_File)fsp->fh->gen_id);
 	} else {
 		msg = "gfs_closedir";
-		e = gfs_closedir((GFS_Dir)fsp->fh->gen_id);
+		e = gfs_closedir(((struct gfvfs_dir *)fsp->fh->gen_id)->dp);
+		free((struct gfvfs_dir *)fsp->fh->gen_id);
 	}
 	if (e == GFARM_ERR_NO_ERROR)
 		return (0);
@@ -517,8 +611,10 @@ gfvfs_write(vfs_handle_struct *handle, files_struct *fsp,
 
 	gflog_debug(GFARM_MSG_UNFIXED, "write: buf %p, size %d", data, n);
 	e = gfs_pio_write((GFS_File)fsp->fh->gen_id, data, n, &rv);
-	if (e == GFARM_ERR_NO_ERROR)
+	if (e == GFARM_ERR_NO_ERROR) {
+		gfs_stat_cache_purge(fsp->fsp_name->base_name);
 		return (rv);
+	}
 	gflog_error(GFARM_MSG_UNFIXED, "gfs_pio_write: %s",
 	    gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
@@ -545,6 +641,7 @@ gfvfs_pwrite(vfs_handle_struct *handle, files_struct *fsp,
 		errno = gfarm_error_to_errno(e);
 		return (-1);
 	}
+	gfs_stat_cache_purge(fsp->fsp_name->base_name);
 	return (rv);
 }
 
@@ -579,8 +676,13 @@ gfvfs_rename(vfs_handle_struct *handle,
 	gflog_debug(GFARM_MSG_UNFIXED, "rename: old %s, new %s",
 	    oldname, newname);
 	e = gfs_rename(oldname, newname);
-	if (e == GFARM_ERR_NO_ERROR)
+	if (e == GFARM_ERR_NO_ERROR) {
+		gfs_stat_cache_purge(oldname);
+		uncache_parent(oldname);
+		gfs_stat_cache_purge(newname);
+		uncache_parent(newname);
 		return (0);
+	}
 	gflog_error(GFARM_MSG_UNFIXED, "gfs_rename: %s", gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (-1);
@@ -609,7 +711,7 @@ gfvfs_stat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
 	gfarm_error_t e;
 
 	gflog_debug(GFARM_MSG_UNFIXED, "stat: path %s", path);
-	e = gfs_stat(path, &st);
+	e = gfs_stat_cached(path, &st);
 	if (e != GFARM_ERR_NO_ERROR) {
 		gflog_error(GFARM_MSG_UNFIXED, "gfs_stat: %s",
 		    gfarm_error_string(e));
@@ -637,7 +739,7 @@ gfvfs_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 		e = gfs_pio_stat(gf, &st);
 	} else {
 		msg = "gfs_statdir";
-		e = gfs_statdir((GFS_Dir)fsp->fh->gen_id, &st);
+		e = gfs_statdir(((struct gfvfs_dir *)fsp->fh->gen_id)->dp, &st);
 	}
 	if (e != GFARM_ERR_NO_ERROR) {
 		gflog_error(GFARM_MSG_UNFIXED, "%s: %s", msg,
@@ -658,7 +760,7 @@ gfvfs_lstat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
 	gfarm_error_t e;
 
 	gflog_debug(GFARM_MSG_UNFIXED, "lstat: path %s", fname);
-	e = gfs_lstat(fname, &st);
+	e = gfs_lstat_cached(fname, &st);
 	if (e != GFARM_ERR_NO_ERROR) {
 		gflog_error(GFARM_MSG_UNFIXED, "gfs_lstat: %s",
 		    gfarm_error_string(e));
@@ -678,8 +780,12 @@ gfvfs_unlink(vfs_handle_struct *handle, const struct smb_filename *smb_fname)
 
 	gflog_debug(GFARM_MSG_UNFIXED, "unlink: path %s", path);
 	e = gfs_unlink(path);
-	if (e == GFARM_ERR_NO_ERROR)
+	if (e == GFARM_ERR_NO_ERROR) {
+		gfs_stat_cache_purge(path);
+		uncache_parent(path);
+
 		return (0);
+	}
 	gflog_error(GFARM_MSG_UNFIXED, "gfs_unlink: %s", gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (-1);
@@ -692,8 +798,10 @@ gfvfs_chmod(vfs_handle_struct *handle, const char *path, mode_t mode)
 
 	gflog_debug(GFARM_MSG_UNFIXED, "chmod: path %s, mode %o", path, mode);
 	e = gfs_chmod(path, mode & GFARM_S_ALLPERM);
-	if (e == GFARM_ERR_NO_ERROR)
+	if (e == GFARM_ERR_NO_ERROR) {
+		gfs_stat_cache_purge(path);
 		return (0);
+	}
 	gflog_error(GFARM_MSG_UNFIXED, "gfs_chmod: %s", gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (-1);
@@ -780,8 +888,10 @@ gfvfs_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T offset)
 
 	gflog_debug(GFARM_MSG_UNFIXED, "ftruncate: offset %lld", offset);
 	e = gfs_pio_truncate((GFS_File)fsp->fh->gen_id, offset);
-	if (e == GFARM_ERR_NO_ERROR)
+	if (e == GFARM_ERR_NO_ERROR) {
+		gfs_stat_cache_purge(fsp->fsp_name->base_name);
 		return (0);
+	}
 	gflog_error(GFARM_MSG_UNFIXED, "gfs_pio_truncate: %s",
 	    gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
@@ -818,8 +928,10 @@ gfvfs_symlink(vfs_handle_struct *handle, const char *oldpath,
 	gflog_debug(GFARM_MSG_UNFIXED, "symlink: old %s, new %s",
 	    oldpath, newpath);
 	e = gfs_symlink(oldpath, newpath);
-	if (e == GFARM_ERR_NO_ERROR)
+	if (e == GFARM_ERR_NO_ERROR) {
+		uncache_parent(newpath);
 		return (0);
+	}
 	gflog_error(GFARM_MSG_UNFIXED, "gfs_symlink: %s",
 	    gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
@@ -859,8 +971,10 @@ gfvfs_link(vfs_handle_struct *handle, const char *oldpath, const char *newpath)
 	gflog_debug(GFARM_MSG_UNFIXED, "link: old %s, new %s",
 	    oldpath, newpath);
 	e = gfs_link(oldpath, newpath);
-	if (e == GFARM_ERR_NO_ERROR)
+	if (e == GFARM_ERR_NO_ERROR) {
+		uncache_parent(newpath);
 		return (0);
+	}
 	gflog_error(GFARM_MSG_UNFIXED, "gfs_link: %s", gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (-1);
@@ -889,6 +1003,7 @@ gfvfs_mknod(vfs_handle_struct *handle, const char *path, mode_t mode,
 		errno = gfarm_error_to_errno(e);
 		return (-1);
 	}
+	uncache_parent(path);
 	return (0);
 }
 
@@ -1468,11 +1583,11 @@ struct vfs_fn_pointers gfvfs_transparent_fns = {
 	.readdir = gfvfs_readdir,
 	.seekdir = gfvfs_seekdir,
 //	.telldir = gfvfs_telldir,
-//	.rewind_dir = gfvfs_rewind_dir,
+	.rewind_dir = gfvfs_rewind_dir,
 	.mkdir = gfvfs_mkdir,
 	.rmdir = gfvfs_rmdir,
 	.closedir = gfvfs_closedir,
-//	.init_search_op = gfvfs_init_search_op,
+	.init_search_op = gfvfs_init_search_op,
 
 	/* File operations */
 

@@ -358,7 +358,6 @@ gfvfs_seekdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp, long offset)
 	return;
 }
 
-#if 0 /* libgfarm does not implement yet */
 static long
 gfvfs_telldir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
 {
@@ -376,7 +375,6 @@ gfvfs_telldir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
 	}
 	return ((long)off);
 }
-#endif
 
 static void
 gfvfs_rewind_dir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
@@ -534,7 +532,7 @@ gfvfs_create_file(struct vfs_handle_struct *handle, struct smb_request *req,
 	struct security_descriptor *sd, struct ea_list *ea_list,
 	files_struct **result, int *pinfo)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "create_file");
+	gflog_debug(GFARM_MSG_UNFIXED, "create_file: %s", smb_fname->base_name);
 	gflog_error(GFARM_MSG_UNFIXED, "create_file: not implemented");
 	return (NT_STATUS_NOT_IMPLEMENTED);
 }
@@ -1582,7 +1580,7 @@ struct vfs_fn_pointers gfvfs_transparent_fns = {
 	.fdopendir = gfvfs_fdopendir,
 	.readdir = gfvfs_readdir,
 	.seekdir = gfvfs_seekdir,
-//	.telldir = gfvfs_telldir,
+	.telldir = gfvfs_telldir,
 	.rewind_dir = gfvfs_rewind_dir,
 	.mkdir = gfvfs_mkdir,
 	.rmdir = gfvfs_rmdir,

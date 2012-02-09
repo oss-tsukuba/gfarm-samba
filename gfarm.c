@@ -567,7 +567,8 @@ gfvfs_vfs_read(vfs_handle_struct *handle, files_struct *fsp,
 	gfarm_error_t e;
 	int rv;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "read: buf %p, size %d", data, n);
+	gflog_debug(GFARM_MSG_UNFIXED, "read: buf %p, size %lu", data,
+	    (unsigned long)n);
 	e = gfs_pio_read((GFS_File)fsp->fh->gen_id, data, n, &rv);
 	if (e == GFARM_ERR_NO_ERROR)
 		return (rv);
@@ -586,8 +587,8 @@ gfvfs_pread(vfs_handle_struct *handle, files_struct *fsp,
 	GFS_File gf = (GFS_File)fsp->fh->gen_id;
 	int rv;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "pread: buf %p, size %d, offset %lld",
-	    data, n, offset);
+	gflog_debug(GFARM_MSG_UNFIXED, "pread: buf %p, size %lu, offset %lld",
+	    data, (unsigned long)n, (long long)offset);
 	e = gfs_pio_seek(gf, (off_t)offset, GFARM_SEEK_SET, &off);
 	if (e == GFARM_ERR_NO_ERROR)
 		e = gfs_pio_read(gf, data, n, &rv);
@@ -607,7 +608,8 @@ gfvfs_write(vfs_handle_struct *handle, files_struct *fsp,
 	gfarm_error_t e;
 	int rv;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "write: buf %p, size %d", data, n);
+	gflog_debug(GFARM_MSG_UNFIXED, "write: buf %p, size %lu", data,
+	    (unsigned long)n);
 	e = gfs_pio_write((GFS_File)fsp->fh->gen_id, data, n, &rv);
 	if (e == GFARM_ERR_NO_ERROR) {
 		gfs_stat_cache_purge(fsp->fsp_name->base_name);
@@ -627,8 +629,8 @@ gfvfs_pwrite(vfs_handle_struct *handle, files_struct *fsp,
 	gfarm_off_t off;
 	int rv;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "pwrite: buf %p, size %d, offset %lld",
-	    data, n, offset);
+	gflog_debug(GFARM_MSG_UNFIXED, "pwrite: buf %p, size %lu, offset %lld",
+	    data, (unsigned long)n, (long long)offset);
 	e = gfs_pio_seek((GFS_File)fsp->fh->gen_id, offset, GFARM_SEEK_SET,
 		&off);
 	if (e == GFARM_ERR_NO_ERROR)
@@ -884,7 +886,8 @@ gfvfs_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T offset)
 {
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "ftruncate: offset %lld", offset);
+	gflog_debug(GFARM_MSG_UNFIXED, "ftruncate: offset %lld",
+	    (long long)offset);
 	e = gfs_pio_truncate((GFS_File)fsp->fh->gen_id, offset);
 	if (e == GFARM_ERR_NO_ERROR) {
 		gfs_stat_cache_purge(fsp->fsp_name->base_name);

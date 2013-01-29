@@ -22,7 +22,7 @@ case x$with_gfarm in
 esac
 if test x"$GFARM" != x/usr; then
   CPPFLAGS="$CPPFLAGS -I$GFARM/include"
-  LDFLAGS="$LDFLAGS -R$GFARM/lib -L$GFARM/lib"
+  LDFLAGS="$LDFLAGS -L$GFARM/lib"
 fi
 AC_MSG_RESULT([$GFARM])
 
@@ -36,7 +36,7 @@ case x$with_gfarm in
 esac
 if test x"$SAMBA" != x/usr; then
   CPPFLAGS="$CPPFLAGS -I$SAMBA/include -I$SAMBA/../lib/replace -I$SAMBA -I$SAMBA/.. -I$SAMBA/../lib/talloc -I$SAMBA/../lib/tevent"
-  LDFLAGS="$LDFLAGS -R$SAMBA/lib -L$SAMBA/lib"
+  LDFLAGS="$LDFLAGS -L$SAMBA/lib"
 fi
 AC_MSG_RESULT([$SAMBA])
 

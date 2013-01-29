@@ -11387,7 +11387,7 @@ case x$with_gfarm in
 esac
 if test x"$GFARM" != x/usr; then
   CPPFLAGS="$CPPFLAGS -I$GFARM/include"
-  LDFLAGS="$LDFLAGS -R$GFARM/lib -L$GFARM/lib"
+  LDFLAGS="$LDFLAGS -L$GFARM/lib"
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $GFARM" >&5
 $as_echo "$GFARM" >&6; }
@@ -11407,7 +11407,7 @@ case x$with_gfarm in
 esac
 if test x"$SAMBA" != x/usr; then
   CPPFLAGS="$CPPFLAGS -I$SAMBA/include -I$SAMBA/../lib/replace -I$SAMBA -I$SAMBA/.. -I$SAMBA/../lib/talloc -I$SAMBA/../lib/tevent"
-  LDFLAGS="$LDFLAGS -R$SAMBA/lib -L$SAMBA/lib"
+  LDFLAGS="$LDFLAGS -L$SAMBA/lib"
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $SAMBA" >&5
 $as_echo "$SAMBA" >&6; }

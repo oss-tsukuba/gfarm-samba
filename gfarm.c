@@ -1038,14 +1038,22 @@ gfvfs_realpath(vfs_handle_struct *handle, const char *path)
 	char *rpath, *skip_path;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "realpath: path %s", path);
+	gflog_debug(GFARM_MSG_UNFIXED, "realpath: input: %s", path);
 	e = gfs_realpath(path, &rpath);
 	if (e == GFARM_ERR_NO_ERROR) {
 		skip_path = strdup(skip_prefix(rpath));
 		free(rpath);
+		if (skip_path != NULL) {
+			gflog_debug(GFARM_MSG_UNFIXED, "realpath: result: %s",
+			    skip_path);
+		} else {
+			gflog_error(GFARM_MSG_UNFIXED, "realpath: no memory");
+			errno = ENOMEM;
+		}
 		return (skip_path);
 	}
-	gflog_error(GFARM_MSG_UNFIXED, "realpath: %s", gfarm_error_string(e));
+	gflog_error(GFARM_MSG_UNFIXED, "realpath: %s: %s",
+	    path, gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (NULL);
 }

@@ -271,6 +271,7 @@ gfvfs_opendir(vfs_handle_struct *handle, const char *fname,
 			gdp->path = strdup(fname);
 		if (gdp == NULL || gdp->path == NULL) {
 			gflog_error(GFARM_MSG_UNFIXED, "opendir: no memory");
+			free(gdp->path);
 			free(gdp);
 			gfs_closedir(dp);
 			return (NULL);
@@ -440,6 +441,7 @@ gfvfs_closedir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dir)
 
 	gflog_debug(GFARM_MSG_UNFIXED, "closedir");
 	e = gfs_closedir(gdp->dp);
+	free(gdp->path);
 	free(gdp);
 	if (e == GFARM_ERR_NO_ERROR)
 		return (0);
@@ -506,6 +508,7 @@ gfvfs_open(vfs_handle_struct *handle, struct smb_filename *smb_fname,
 			gdp->path = strdup(fname);
 		if (gdp == NULL || gdp->path == NULL) {
 			gflog_error(GFARM_MSG_UNFIXED, "open: no memory");
+			free(gdp->path);
 			free(gdp);
 			gfs_closedir(dp);
 			errno = ENOMEM;
@@ -549,9 +552,12 @@ gfvfs_close_fn(vfs_handle_struct *handle, files_struct *fsp)
 		msg = "gfs_pio_close";
 		e = gfs_pio_close((GFS_File)fsp->fh->gen_id);
 	} else {
+		struct gfvfs_dir *gdp = (struct gfvfs_dir *)fsp->fh->gen_id;
+
 		msg = "gfs_closedir";
-		e = gfs_closedir(((struct gfvfs_dir *)fsp->fh->gen_id)->dp);
-		free((struct gfvfs_dir *)fsp->fh->gen_id);
+		e = gfs_closedir(gdp->dp);
+		free(gdp->path);
+		free(gdp);
 	}
 	if (e == GFARM_ERR_NO_ERROR)
 		return (0);
@@ -1348,10 +1354,8 @@ static int
 gfvfs_sys_acl_free_acl(vfs_handle_struct *handle, SMB_ACL_T posix_acl)
 {
 	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_free_acl");
-	gflog_error(GFARM_MSG_UNFIXED, "sys_acl_free_acl: %s",
-	    strerror(ENOSYS));
-	errno = ENOSYS;
-	return (-1);
+	SAFE_FREE(posix_acl);
+	return (0);
 }
 
 static int

@@ -179,7 +179,7 @@ gfvfs_disk_free(vfs_handle_struct *handle, const char *path,
 	bool small_query, uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
 {
 	gflog_debug(GFARM_MSG_UNFIXED, "disk_free: path %s", path);
-	*bsize = 0;
+	*bsize = 512;
 	*dfree = 0;
 	*dsize = 0;
 

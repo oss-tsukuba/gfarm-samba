@@ -289,7 +289,8 @@ static SMB_STRUCT_DIR *
 gfvfs_fdopendir(vfs_handle_struct *handle, files_struct *fsp,
 	const char *mask, uint32 attr)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "fdopendir: mask %s", mask);
+	gflog_debug(GFARM_MSG_UNFIXED, "fdopendir: ENOSYS (no problem)");
+	errno = ENOSYS; /* use gfvfs_opendir() instead of this */
 	return (NULL);
 }
 

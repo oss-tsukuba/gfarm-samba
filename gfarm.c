@@ -178,11 +178,20 @@ static uint64_t
 gfvfs_disk_free(vfs_handle_struct *handle, const char *path,
 	bool small_query, uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "disk_free: path %s", path);
-	*bsize = 512;
-	*dfree = 0;
-	*dsize = 0;
+	gfarm_off_t used, avail, files;
+	gfarm_error_t e;
 
+	gflog_debug(GFARM_MSG_UNFIXED, "disk_free: path %s", path);
+	e = gfs_statfs(&used, &avail, &files);
+	if (e != GFARM_ERR_NO_ERROR) {
+		gflog_error(GFARM_MSG_UNFIXED, "gfs_statfs: %s",
+		    gfarm_error_string(e));
+		errno = gfarm_error_to_errno(e);
+		return (-1);
+	}
+	*bsize = 1024;
+	*dfree = avail;
+	*dsize = used + avail;
 	return (0);
 }
 

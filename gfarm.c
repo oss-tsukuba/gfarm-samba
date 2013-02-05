@@ -533,8 +533,6 @@ gfvfs_open(vfs_handle_struct *handle, struct smb_filename *smb_fname,
 	}
 }
 
-/* this function is required to create a file from NT SMB */
-#if 0 /* not implemented yet */
 static NTSTATUS
 gfvfs_create_file(struct vfs_handle_struct *handle, struct smb_request *req,
 	uint16_t root_dir_fid, struct smb_filename *smb_fname,
@@ -543,13 +541,52 @@ gfvfs_create_file(struct vfs_handle_struct *handle, struct smb_request *req,
 	uint32_t file_attributes, uint32_t oplock_request,
 	uint64_t allocation_size, uint32_t private_flags,
 	struct security_descriptor *sd, struct ea_list *ea_list,
-	files_struct **result, int *pinfo)
+	files_struct **result_fsp, int *pinfo)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "create_file: %s", smb_fname->base_name);
-	gflog_error(GFARM_MSG_UNFIXED, "create_file: not implemented");
-	return (NT_STATUS_NOT_IMPLEMENTED);
+	NTSTATUS result;
+	const char *str_create_disposition;
+
+	gflog_debug(GFARM_MSG_UNFIXED, "create_file(VFS_NEXT): %s%s",
+	    smb_fname->base_name,
+	    smb_fname->stream_name != NULL ? smb_fname->stream_name : "");
+
+	result = SMB_VFS_NEXT_CREATE_FILE(
+	    handle, req, root_dir_fid, smb_fname, access_mask, share_access,
+	    create_disposition, create_options, file_attributes,
+	    oplock_request, allocation_size, private_flags, sd, ea_list,
+	    result_fsp, pinfo);
+
+	switch (create_disposition) {
+	case FILE_SUPERSEDE:
+		str_create_disposition = "SUPERSEDE";
+		break;
+	case FILE_OVERWRITE_IF:
+		str_create_disposition = "OVERWRITE_IF";
+		break;
+	case FILE_OPEN:
+		str_create_disposition = "OPEN";
+		break;
+	case FILE_OVERWRITE:
+		str_create_disposition = "OVERWRITE";
+		break;
+	case FILE_CREATE:
+		str_create_disposition = "CREATE";
+		break;
+	case FILE_OPEN_IF:
+		str_create_disposition = "OPEN_IF";
+		break;
+	default:
+		str_create_disposition = "UNKNOWN";
+	}
+	gflog_debug(GFARM_MSG_UNFIXED,
+	    "create_file: %s|0x%x|%s|%s|%s%s",
+	    nt_errstr(result), access_mask,
+	    create_options & FILE_DIRECTORY_FILE ? "DIR" : "FILE",
+	    str_create_disposition, smb_fname->base_name,
+	    smb_fname->stream_name != NULL ? smb_fname->stream_name : "");
+
+	return (result);
 }
-#endif
 
 static int
 gfvfs_close_fn(vfs_handle_struct *handle, files_struct *fsp)
@@ -1100,30 +1137,24 @@ static NTSTATUS
 gfvfs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	uint32 security_info, struct security_descriptor **ppdesc)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "fget_nt_acl");
-	gflog_error(GFARM_MSG_UNFIXED, "fget_nt_acl: not implemented");
-	return (NT_STATUS_NOT_IMPLEMENTED);
+	gflog_debug(GFARM_MSG_UNFIXED, "fget_nt_acl(VFS_NEXT)");
+	return (SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info, ppdesc));
 }
 
-/* this function is required to create a file from NT SMB */
-#if 0 /* not implemented yet */
 static NTSTATUS
 gfvfs_get_nt_acl(vfs_handle_struct *handle, const char *name,
 	uint32 security_info, struct security_descriptor **ppdesc)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "get_nt_acl: path %s", name);
-	gflog_error(GFARM_MSG_UNFIXED, "get_nt_acl: not implemented");
-	return (NT_STATUS_NOT_IMPLEMENTED);
+	gflog_debug(GFARM_MSG_UNFIXED, "get_nt_acl(VFS_NEXT): path %s", name);
+	return (SMB_VFS_NEXT_GET_NT_ACL(handle, name, security_info, ppdesc));
 }
-#endif
 
 static NTSTATUS
 gfvfs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-	uint32 security_info_sent, const struct security_descriptor *psd)
+	uint32 si_sent, const struct security_descriptor *psd)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "fset_nt_acl");
-	gflog_error(GFARM_MSG_UNFIXED, "fset_nt_acl: not implemented");
-	return (NT_STATUS_NOT_IMPLEMENTED);
+	gflog_debug(GFARM_MSG_UNFIXED, "fset_nt_acl(VFS_NEXT)");
+	return (SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, si_sent, psd));
 }
 
 static int
@@ -1190,8 +1221,6 @@ gfvfs_sys_acl_get_qualifier(vfs_handle_struct *handle,
 	return (NULL);
 }
 
-/* this function is required to create a file from NT SMB */
-#if 0 /* not implemented yet */
 static SMB_ACL_T
 gfvfs_sys_acl_get_file(vfs_handle_struct *handle, const char *path_p,
 	SMB_ACL_TYPE_T type)
@@ -1202,7 +1231,6 @@ gfvfs_sys_acl_get_file(vfs_handle_struct *handle, const char *path_p,
 	errno = ENOSYS;
 	return (NULL);
 }
-#endif
 
 static SMB_ACL_T
 gfvfs_sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp)
@@ -1615,7 +1643,7 @@ struct vfs_fn_pointers gfvfs_transparent_fns = {
 	/* File operations */
 
 	.open_fn = gfvfs_open,
-//	.create_file = gfvfs_create_file,
+	.create_file = gfvfs_create_file,
 	.close_fn = gfvfs_close_fn,
 	.vfs_read = gfvfs_vfs_read,
 	.pread = gfvfs_pread,
@@ -1667,7 +1695,7 @@ struct vfs_fn_pointers gfvfs_transparent_fns = {
 	/* NT ACL operations. */
 
 	.fget_nt_acl = gfvfs_fget_nt_acl,
-//	.get_nt_acl = gfvfs_get_nt_acl,
+	.get_nt_acl = gfvfs_get_nt_acl,
 	.fset_nt_acl = gfvfs_fset_nt_acl,
 
 	/* POSIX ACL operations. */
@@ -1679,7 +1707,7 @@ struct vfs_fn_pointers gfvfs_transparent_fns = {
 	.sys_acl_get_tag_type = gfvfs_sys_acl_get_tag_type,
 	.sys_acl_get_permset = gfvfs_sys_acl_get_permset,
 	.sys_acl_get_qualifier = gfvfs_sys_acl_get_qualifier,
-//	.sys_acl_get_file = gfvfs_sys_acl_get_file,
+	.sys_acl_get_file = gfvfs_sys_acl_get_file,
 	.sys_acl_get_fd = gfvfs_sys_acl_get_fd,
 	.sys_acl_clear_perms = gfvfs_sys_acl_clear_perms,
 	.sys_acl_add_perm = gfvfs_sys_acl_add_perm,

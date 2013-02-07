@@ -1014,7 +1014,7 @@ gfvfs_vfs_readlink(vfs_handle_struct *handle, const char *path,
 	memcpy(buf, old, len);
 	buf[len] = '\0';
 	free(old);
-	return (0);
+	return (len);
 }
 
 static int

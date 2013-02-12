@@ -475,14 +475,21 @@ gfvfs_open(vfs_handle_struct *handle, struct smb_filename *smb_fname,
 	files_struct *fsp, int flags, mode_t mode)
 {
 	int g_flags = open_flags_gfarmize(flags);
-	char *fname = smb_fname->base_name, *msg;
+	const char *fname = smb_fname->base_name;
+	const char *stream = smb_fname->stream_name;
+	char *msg;
 	GFS_File gf;
 	GFS_Dir dp;
 	struct gfvfs_dir *gdp;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "open: path %s, flags %x, mode %o, "
-	    "is_dir %d", fname, flags, mode, fsp->is_directory);
+	gflog_debug(GFARM_MSG_UNFIXED, "open: path=%s%s, flags=%x, mode=%o, "
+	    "is_dir=%d", fname, stream != NULL ? stream : "",
+	    flags, mode, fsp->is_directory);
+	if (stream != NULL) {
+		errno = ENOENT;
+		return (-1);
+	}
 	if (g_flags < 0) {
 		gflog_error(GFARM_MSG_UNFIXED, "open: %s", strerror(EINVAL));
 		errno = EINVAL;
@@ -745,11 +752,18 @@ gfvfs_rename(vfs_handle_struct *handle,
 	const struct smb_filename *smb_fname_dst)
 {
 	const char *oldname = smb_fname_src->base_name;
+	const char *old_stream = smb_fname_src->stream_name;
 	const char *newname = smb_fname_dst->base_name;
+	const char *new_stream = smb_fname_dst->stream_name;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "rename: old %s, new %s",
-	    oldname, newname);
+	gflog_debug(GFARM_MSG_UNFIXED, "rename: old=%s%s, new=%s%s",
+	    oldname, old_stream != NULL ? old_stream : "",
+	    newname, new_stream != NULL ? new_stream : "");
+	if (old_stream != NULL || new_stream != NULL) {
+		errno = ENOENT;
+		return (-1);
+	}
 	e = gfs_rename(oldname, newname);
 	if (e == GFARM_ERR_NO_ERROR) {
 		gfs_stat_cache_purge(oldname);
@@ -783,9 +797,15 @@ gfvfs_stat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
 {
 	struct gfs_stat st;
 	const char *path = smb_fname->base_name;
+	const char *stream = smb_fname->stream_name;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "stat: path %s", path);
+	gflog_debug(GFARM_MSG_UNFIXED, "stat: path=%s%s",
+	    path, stream != NULL ? stream : "");
+	if (stream != NULL) {
+		errno = ENOENT;
+		return (-1);
+	}
 	e = gfs_stat_cached(path, &st);
 	if (e != GFARM_ERR_NO_ERROR) {
 		gflog_error(GFARM_MSG_UNFIXED, "gfs_stat: %s",
@@ -831,18 +851,24 @@ static int
 gfvfs_lstat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
 {
 	struct gfs_stat st;
-	const char *fname = smb_fname->base_name;
+	const char *path = smb_fname->base_name;
+	const char *stream = smb_fname->stream_name;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "lstat: path %s", fname);
-	e = gfs_lstat_cached(fname, &st);
+	gflog_debug(GFARM_MSG_UNFIXED, "lstat: path=%s%s",
+	    path, stream != NULL ? stream : "");
+	if (stream != NULL) {
+		errno = ENOENT;
+		return (-1);
+	}
+	e = gfs_lstat_cached(path, &st);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gflog_error(GFARM_MSG_UNFIXED, "gfs_lstat: %s: %s", fname,
+		gflog_error(GFARM_MSG_UNFIXED, "gfs_lstat: %s: %s", path,
 		    gfarm_error_string(e));
 		errno = gfarm_error_to_errno(e);
 		return (-1);
 	}
-	copy_gfs_stat(fname, &smb_fname->st, &st);
+	copy_gfs_stat(path, &smb_fname->st, &st);
 	gfs_stat_free(&st);
 	return (0);
 }
@@ -871,9 +897,15 @@ static int
 gfvfs_unlink(vfs_handle_struct *handle, const struct smb_filename *smb_fname)
 {
 	const char *path = smb_fname->base_name;
+	const char *stream = smb_fname->stream_name;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "unlink: path %s", path);
+	gflog_debug(GFARM_MSG_UNFIXED, "unlink: path=%s%s",
+	    path, stream != NULL ? stream : "");
+	if (stream != NULL) {
+		errno = ENOENT;
+		return (-1);
+	}
 	e = gfs_unlink(path);
 	if (e == GFARM_ERR_NO_ERROR) {
 		gfs_stat_cache_purge(path);

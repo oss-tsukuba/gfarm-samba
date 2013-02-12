@@ -125,6 +125,7 @@ copy_gfs_stat(const char *path, SMB_STRUCT_STAT *dst, struct gfs_stat *src)
 	dst->st_ex_mtime.tv_nsec = src->st_mtimespec.tv_nsec;
 	dst->st_ex_ctime.tv_sec = src->st_ctimespec.tv_sec;
 	dst->st_ex_ctime.tv_nsec = src->st_ctimespec.tv_nsec;
+	/* XXX dst->st_ex_btime, dst->st_ex_calculated_birthtime */
 }
 
 static int
@@ -978,14 +979,48 @@ static int
 gfvfs_ntimes(vfs_handle_struct *handle, const struct smb_filename *smb_fname,
 	struct smb_file_time *ft)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "ntimes(ignored)"); /* XXX */
-	gflog_info(GFARM_MSG_UNFIXED, "ntimes: %s", strerror(ENOSYS));
-#if 0 /* XXX */
-	errno = ENOSYS;
+	gfarm_error_t e;
+
+	gflog_debug(GFARM_MSG_UNFIXED, "ntimes: path=%s%s",
+	    smb_fname->base_name,
+	    smb_fname->stream_name != NULL ? smb_fname->stream_name : "");
+	if (smb_fname->stream_name != NULL) {
+		errno = ENOENT;
+		return (-1);
+	}
+	if (ft != NULL) {
+		struct gfarm_timespec gt[2];
+
+		if (null_timespec(ft->atime))
+			ft->atime = smb_fname->st.st_ex_atime;
+		if (null_timespec(ft->mtime))
+			ft->mtime = smb_fname->st.st_ex_mtime;
+
+		/* XXX ft->create_time */
+
+		if ((timespec_compare(&ft->atime,
+		     &smb_fname->st.st_ex_atime) == 0) &&
+		    (timespec_compare(&ft->mtime,
+		     &smb_fname->st.st_ex_mtime) == 0))
+			return (0);
+
+		gt[0].tv_sec = ft->atime.tv_sec;
+		gt[0].tv_nsec = ft->atime.tv_nsec;
+		gt[1].tv_sec = ft->mtime.tv_sec;
+		gt[1].tv_nsec = ft->mtime.tv_nsec;
+		e = gfs_lutimes(smb_fname->base_name, gt);
+	} else
+		e = gfs_lutimes(smb_fname->base_name, NULL);
+
+	if (e == GFARM_ERR_NO_ERROR) {
+		gfs_stat_cache_purge(smb_fname->base_name);
+		uncache_parent(smb_fname->base_name);
+		return (0);
+	}
+	gflog_debug(GFARM_MSG_UNFIXED, "gfs_lutimes: %s: %s",
+	    smb_fname->base_name, gfarm_error_string(e));
+	errno = gfarm_error_to_errno(e);
 	return (-1);
-#else  /* XXX ignore */
-	return (0);
-#endif
 }
 
 static int
@@ -1908,7 +1943,7 @@ struct vfs_fn_pointers vfs_gfarm_fns = {
 	.lchown = gfvfs_lchown, /* ENOSYS */
 	.chdir = gfvfs_chdir, /* incomplete, OK? */
 	.getwd = gfvfs_getwd, /* incomplete, OK? */
-	.ntimes = gfvfs_ntimes, /* XXX ignored (not implemented) */
+	.ntimes = gfvfs_ntimes,
 	.ftruncate = gfvfs_ftruncate,
 	.fallocate = gfvfs_fallocate, /* ENOSYS */
 	.lock = gfvfs_lock, /* ENOSYS */

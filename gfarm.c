@@ -18,6 +18,10 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/*
+ * $Id$
+ */
+
 #include "includes.h"
 #include "smbd/proto.h"
 
@@ -35,6 +39,9 @@
 #undef PACKAGE_VERSION
 #undef PACKAGE_BUGREPORT
 #include <gfarm/gfarm.h>
+
+#include "gfarm_acl.h"
+#include "gfarm_id.h"
 
 /* internal interface */
 int gfs_pio_fileno(GFS_File);
@@ -69,41 +76,34 @@ open_flags_gfarmize(int open_flags)
 	return (gfs_flags);
 }
 
-#define NOBODY_UID	65535
-#define NOBODY_GID	65535
-
 static uid_t
 get_uid(const char *path, const char *user)
 {
-	struct passwd *pwd;
-	char *luser;
+	gfarm_error_t e;
+	uid_t uid;
 
-	if (gfarm_global_to_local_username_by_url(path, user, &luser)
-	    == GFARM_ERR_NO_ERROR) {
-		pwd = getpwnam(luser);
-		free(luser);
-		if (pwd != NULL)
-			return (pwd->pw_uid);
+	e = gfarm_id_user_to_uid(path, user, &uid);
+	if (e != GFARM_ERR_NO_ERROR) {
+		gflog_warning(GFARM_MSG_UNFIXED,
+		    "get_uid(%s): %s", user, gfarm_error_string(e));
+		return (gfarm_id_nobody_uid());
 	}
-	/* cannot conver to a local account */
-	return (NOBODY_UID);
+	return (uid);
 }
 
-static int
+static gid_t
 get_gid(const char *path, const char *group)
 {
-	struct group *grp;
-	char *lgroup;
+	gfarm_error_t e;
+	gid_t gid;
 
-	if (gfarm_global_to_local_groupname_by_url(path, group, &lgroup)
-	    == GFARM_ERR_NO_ERROR) {
-		grp = getgrnam(lgroup);
-		free(lgroup);
-		if (grp != NULL)
-			return (grp->gr_gid);
+	e = gfarm_id_group_to_gid(path, group, &gid);
+	if (e != GFARM_ERR_NO_ERROR) {
+		gflog_warning(GFARM_MSG_UNFIXED,
+		    "get_gid(%s): %s", group, gfarm_error_string(e));
+		return (gfarm_id_nogroup_gid());
 	}
-	/* cannot conver to a local group */
-	return (NOBODY_GID);
+	return (gid);
 }
 
 static void
@@ -152,8 +152,10 @@ gfvfs_connect(vfs_handle_struct *handle, const char *service,
 	e = gfarm_initialize(NULL, NULL);
 	if (uid == 0)
 		seteuid(uid);
-	if (e == GFARM_ERR_NO_ERROR)
+	if (e == GFARM_ERR_NO_ERROR) {
+		gfvfs_acl_id_init();
 		return (0);
+	}
 	gflog_error(GFARM_MSG_UNFIXED, "gfarm_initialize: %s",
 	    gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
@@ -935,12 +937,11 @@ gfvfs_chmod(vfs_handle_struct *handle, const char *path, mode_t mode)
 }
 
 static int
-gfvfs_fchmod(vfs_handle_struct *handle, files_struct *fsp,
-	mode_t mode)
+gfvfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
 {
 	gflog_debug(GFARM_MSG_UNFIXED, "fchmod: mode %o", mode);
 	gflog_info(GFARM_MSG_UNFIXED, "fchmod: %s", strerror(ENOSYS));
-	errno = ENOSYS;
+	errno = ENOSYS; /* XXX gfs_fchmod() */
 	return (-1);
 }
 
@@ -1450,25 +1451,156 @@ gfvfs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 static int
-gfvfs_chmod_acl(vfs_handle_struct *handle, const char *name, mode_t mode)
+gfvfs_chmod_acl(vfs_handle_struct *handle, const char *path, mode_t mode)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "chmod_acl: path %s, mode %o",
-	    name, mode);
-	gflog_info(GFARM_MSG_UNFIXED, "chflags: %s", strerror(ENOSYS));
-	errno = ENOSYS;
+	gflog_debug(GFARM_MSG_UNFIXED, "chmod_acl: path=%s, mode=%o",
+	    path, mode);
+	return (gfvfs_chmod(handle, path, mode));
+}
+
+static int
+gfvfs_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
+{
+	gflog_debug(GFARM_MSG_UNFIXED, "fchmod_acl: mode=%o", mode);
+	return (gfvfs_fchmod(handle, fsp, mode));
+}
+
+static int
+smb_acl_type_to_gfarm_acl_type(const char *path, const char *diag,
+	SMB_ACL_TYPE_T s_type, gfarm_acl_type_t *g_typep)
+{
+	switch (s_type) {
+	case SMB_ACL_TYPE_ACCESS:
+		*g_typep = GFARM_ACL_TYPE_ACCESS;
+		gflog_debug(GFARM_MSG_UNFIXED,
+		    "%s[access]: path=%s", diag, path);
+		return (1);
+	case SMB_ACL_TYPE_DEFAULT:
+		*g_typep = GFARM_ACL_TYPE_DEFAULT;
+		gflog_debug(GFARM_MSG_UNFIXED,
+		    "%s[default]: path=%s", diag, path);
+		return (1);
+	default:
+		gflog_debug(GFARM_MSG_UNFIXED,
+		    "%s[EINVAL]: path=%s", diag, path);
+		return (0);
+	}
+}
+
+static SMB_ACL_T
+gfvfs_sys_acl_get_file(vfs_handle_struct *handle, const char *path,
+	SMB_ACL_TYPE_T s_type)
+{
+	SMB_ACL_T s_acl;
+	gfarm_error_t e;
+	gfarm_acl_t g_acl;
+	gfarm_acl_type_t g_type;
+	int save_errno;
+	static const char diag[] = "sys_acl_get_file";
+
+	if (!smb_acl_type_to_gfarm_acl_type(path, diag, s_type, &g_type)) {
+		errno = EINVAL;
+		return (NULL);
+	}
+	e = gfs_acl_get_file_cached(path, g_type, &g_acl);
+	if (e == GFARM_ERR_NO_SUCH_OBJECT && g_type == GFARM_ACL_TYPE_ACCESS) {
+		struct gfs_stat st;
+
+		e = gfs_lstat_cached(path, &st);
+		if (e != GFARM_ERR_NO_ERROR) {
+			gflog_error(GFARM_MSG_UNFIXED, "gfs_lstat: %s: %s",
+			    path, gfarm_error_string(e));
+			errno = gfarm_error_to_errno(e);
+			return (NULL);
+		}
+		e = gfs_acl_from_mode(st.st_mode, &g_acl);
+		gfs_stat_free(&st);
+	}
+	if (e != GFARM_ERR_NO_ERROR) {
+		gflog_error(GFARM_MSG_UNFIXED,
+		    "gfs_acl_get_file_cached[%s]: %s: %s",
+		    g_type == GFARM_ACL_TYPE_ACCESS ? "access" : "default",
+		    path, gfarm_error_string(e));
+		errno = gfarm_error_to_errno(e);
+		return (NULL);
+	}
+	s_acl = gfvfs_gfarm_acl_to_smb_acl(path, g_acl);
+	save_errno = errno;
+	gfs_acl_free(g_acl);
+	errno = save_errno;
+	return (s_acl);
+}
+
+static SMB_ACL_T
+gfvfs_sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp)
+{
+	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_get_fd");
+	gflog_info(GFARM_MSG_UNFIXED, "sys_acl_get_fd: %s",
+	    strerror(ENOSYS));
+	errno = ENOSYS; /* XXX gfs_acl_get_fh() */
+	return (NULL);
+}
+
+static int
+gfvfs_sys_acl_set_file(vfs_handle_struct *handle, const char *path,
+	SMB_ACL_TYPE_T s_type, SMB_ACL_T s_acl)
+{
+	gfarm_error_t e;
+	gfarm_acl_t g_acl;
+	gfarm_acl_type_t g_type;
+	static const char diag[] = "sys_acl_set_file";
+
+	if (!smb_acl_type_to_gfarm_acl_type(path, diag, s_type, &g_type)) {
+		errno = EINVAL;
+		return (-1);
+	}
+	g_acl = gfvfs_smb_acl_to_gfarm_acl(path, s_acl);
+	if (g_acl == NULL)
+		return (-1); /* with errno */
+
+	e = gfs_acl_set_file(path, g_type, g_acl);
+	gfs_acl_free(g_acl);
+	if (e != GFARM_ERR_NO_ERROR) {
+		gflog_error(GFARM_MSG_UNFIXED, "gfs_acl_set_file: %s",
+		    gfarm_error_string(e));
+		errno = gfarm_error_to_errno(e);
+		return (-1);
+	}
+	gfs_stat_cache_purge(path);
+	uncache_parent(path);
+	return (0);
+}
+
+static int
+gfvfs_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
+	SMB_ACL_T theacl)
+{
+	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_set_fd");
+	gflog_info(GFARM_MSG_UNFIXED, "sys_acl_set_fd: %s", strerror(ENOSYS));
+	errno = ENOSYS; /* XXX gfs_acl_set_fh() */
 	return (-1);
 }
 
 static int
-gfvfs_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp,
-	mode_t mode)
+gfvfs_sys_acl_delete_def_file(vfs_handle_struct *handle,  const char *path)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "fchmod_acl: mode %o", mode);
-	gflog_info(GFARM_MSG_UNFIXED, "fchmod_acl: %s", strerror(ENOSYS));
-	errno = ENOSYS;
-	return (-1);
+	gfarm_error_t e;
+
+	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_delete_def_file: path=%s",
+	    path);
+	e = gfs_acl_delete_def_file(path);
+	if (e != GFARM_ERR_NO_ERROR) {
+		gflog_error(GFARM_MSG_UNFIXED, "gfs_acl_delete_def_file: %s",
+		    gfarm_error_string(e));
+		errno = gfarm_error_to_errno(e);
+		return (-1);
+	}
+	gfs_stat_cache_purge(path);
+	uncache_parent(path);
+	return (0);
 }
 
+#if 0 /* unnecessary to hook (transparent) */
 static int
 gfvfs_sys_acl_get_entry(vfs_handle_struct *handle, SMB_ACL_T theacl,
 	int entry_id, SMB_ACL_ENTRY_T *entry_p)
@@ -1508,27 +1640,6 @@ gfvfs_sys_acl_get_qualifier(vfs_handle_struct *handle,
 {
 	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_get_qualifier");
 	gflog_info(GFARM_MSG_UNFIXED, "sys_acl_get_qualifier: %s",
-	    strerror(ENOSYS));
-	errno = ENOSYS;
-	return (NULL);
-}
-
-static SMB_ACL_T
-gfvfs_sys_acl_get_file(vfs_handle_struct *handle, const char *path_p,
-	SMB_ACL_TYPE_T type)
-{
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_get_file: path %s", path_p);
-	gflog_info(GFARM_MSG_UNFIXED, "sys_acl_get_file: %s",
-	    strerror(ENOSYS));
-	errno = ENOSYS;
-	return (NULL);
-}
-
-static SMB_ACL_T
-gfvfs_sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp)
-{
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_get_fd");
-	gflog_info(GFARM_MSG_UNFIXED, "sys_acl_get_fd: %s",
 	    strerror(ENOSYS));
 	errno = ENOSYS;
 	return (NULL);
@@ -1628,38 +1739,6 @@ gfvfs_sys_acl_valid(vfs_handle_struct *handle, SMB_ACL_T theacl)
 }
 
 static int
-gfvfs_sys_acl_set_file(vfs_handle_struct *handle, const char *name,
-	SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl)
-{
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_set_file: name %s", name);
-	gflog_info(GFARM_MSG_UNFIXED, "sys_acl_set_file: %s",
-	    strerror(ENOSYS));
-	errno = ENOSYS;
-	return (-1);
-}
-
-static int
-gfvfs_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
-	SMB_ACL_T theacl)
-{
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_set_fd");
-	gflog_info(GFARM_MSG_UNFIXED, "sys_acl_set_fd: %s", strerror(ENOSYS));
-	errno = ENOSYS;
-	return (-1);
-}
-
-static int
-gfvfs_sys_acl_delete_def_file(vfs_handle_struct *handle,  const char *path)
-{
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_delete_def_file: path %s",
-	    path);
-	gflog_info(GFARM_MSG_UNFIXED, "sys_acl_delete_def_file: %s",
-	    strerror(ENOSYS));
-	errno = ENOSYS;
-	return (-1);
-}
-
-static int
 gfvfs_sys_acl_get_perm(vfs_handle_struct *handle, SMB_ACL_PERMSET_T permset,
 	SMB_ACL_PERM_T perm)
 {
@@ -1698,6 +1777,7 @@ gfvfs_sys_acl_free_qualifier(vfs_handle_struct *handle, void *qualifier,
 	errno = ENOSYS;
 	return (-1);
 }
+#endif /* unnecessary to hook */
 
 static ssize_t
 gfvfs_getxattr(vfs_handle_struct *handle, const char *path,
@@ -1969,7 +2049,7 @@ struct vfs_fn_pointers vfs_gfarm_fns = {
 	.get_alloc_size = gfvfs_get_alloc_size,
 	.unlink = gfvfs_unlink,
 	.chmod = gfvfs_chmod,
-	.fchmod = gfvfs_fchmod, /* XXX ENOSYS */
+	.fchmod = gfvfs_fchmod, /* ENOSYS */
 	.chown = gfvfs_chown, /* ENOSYS */
 	.fchown = gfvfs_fchown, /* ENOSYS */
 	.lchown = gfvfs_lchown, /* ENOSYS */
@@ -2006,15 +2086,19 @@ struct vfs_fn_pointers vfs_gfarm_fns = {
 	.get_nt_acl = gfvfs_get_nt_acl, /* transparent */
 	.fset_nt_acl = gfvfs_fset_nt_acl, /* transparent */
 
-	/* POSIX ACL operations */  /* XXX ENOSYS */
+	/* POSIX ACL operations */
 	.chmod_acl = gfvfs_chmod_acl,
 	.fchmod_acl = gfvfs_fchmod_acl,
+	.sys_acl_get_file = gfvfs_sys_acl_get_file,
+	.sys_acl_get_fd = gfvfs_sys_acl_get_fd, /* ENOSYS */
+	.sys_acl_set_file = gfvfs_sys_acl_set_file,
+	.sys_acl_set_fd = gfvfs_sys_acl_set_fd, /* ENOSYS */
+	.sys_acl_delete_def_file = gfvfs_sys_acl_delete_def_file,
+#if 0 /* unnecessary to hook */
 	.sys_acl_get_entry = gfvfs_sys_acl_get_entry,
 	.sys_acl_get_tag_type = gfvfs_sys_acl_get_tag_type,
 	.sys_acl_get_permset = gfvfs_sys_acl_get_permset,
 	.sys_acl_get_qualifier = gfvfs_sys_acl_get_qualifier,
-	.sys_acl_get_file = gfvfs_sys_acl_get_file,
-	.sys_acl_get_fd = gfvfs_sys_acl_get_fd,
 	.sys_acl_clear_perms = gfvfs_sys_acl_clear_perms,
 	.sys_acl_add_perm = gfvfs_sys_acl_add_perm,
 	.sys_acl_to_text = gfvfs_sys_acl_to_text,
@@ -2024,13 +2108,11 @@ struct vfs_fn_pointers vfs_gfarm_fns = {
 	.sys_acl_set_qualifier = gfvfs_sys_acl_set_qualifier,
 	.sys_acl_set_permset = gfvfs_sys_acl_set_permset,
 	.sys_acl_valid = gfvfs_sys_acl_valid,
-	.sys_acl_set_file = gfvfs_sys_acl_set_file,
-	.sys_acl_set_fd = gfvfs_sys_acl_set_fd,
-	.sys_acl_delete_def_file = gfvfs_sys_acl_delete_def_file,
 	.sys_acl_get_perm = gfvfs_sys_acl_get_perm,
 	.sys_acl_free_text = gfvfs_sys_acl_free_text,
 	.sys_acl_free_acl = gfvfs_sys_acl_free_acl,
 	.sys_acl_free_qualifier = gfvfs_sys_acl_free_qualifier,
+#endif /* unnecessary to hook */
 
 	/* EA operations */  /* ENOSYS */
 	.getxattr = gfvfs_getxattr,

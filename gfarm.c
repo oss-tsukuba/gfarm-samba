@@ -138,20 +138,28 @@ switch_user(const char *user)
 	return (-1);
 }
 
+/*
+ * OPTIONS
+ * gfarm:config = PATH
+ */
 static int
 gfvfs_connect(vfs_handle_struct *handle, const char *service,
 	const char *user)
 {
 	gfarm_error_t e;
 	uid_t uid = getuid();
+	const char *config = lp_parm_const_string(SNUM(handle->conn),
+	    "gfarm", "config", NULL);
 
-	gflog_debug(GFARM_MSG_UNFIXED, "connect: service %s, user %s",
-	    service, user);
+	if (config != NULL)
+		setenv("GFARM_CONFIG_FILE", config, 0);
 	if (uid == 0)
 		switch_user(user);
 	e = gfarm_initialize(NULL, NULL);
 	if (uid == 0)
 		seteuid(uid);
+	gflog_debug(GFARM_MSG_UNFIXED, "connect: service %s, user %s",
+	    service, user);
 	if (e == GFARM_ERR_NO_ERROR) {
 		gfvfs_acl_id_init();
 		return (0);

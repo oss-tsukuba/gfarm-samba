@@ -184,7 +184,6 @@ gfvfs_disconnect(vfs_handle_struct *handle)
 	}
 }
 
-/* this should be implemented */
 static uint64_t
 gfvfs_disk_free(vfs_handle_struct *handle, const char *path,
 	bool small_query, uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
@@ -210,7 +209,7 @@ static int
 gfvfs_get_quota(vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype,
 	unid_t id, SMB_DISK_QUOTA *dq)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "get_quota");
+	gflog_debug(GFARM_MSG_UNFIXED, "get_quota: qtype=%d", qtype);
 	gflog_info(GFARM_MSG_UNFIXED, "get_quota: %s", strerror(ENOSYS));
 	errno = ENOSYS;
 	return (-1);
@@ -220,7 +219,7 @@ static int
 gfvfs_set_quota(vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype,
 	unid_t id, SMB_DISK_QUOTA *dq)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "set_quota");
+	gflog_debug(GFARM_MSG_UNFIXED, "set_quota: qtype=%d", qtype);
 	gflog_info(GFARM_MSG_UNFIXED, "set_quota: %s", strerror(ENOSYS));
 	errno = ENOSYS;
 	return (-1);
@@ -230,7 +229,7 @@ static int
 gfvfs_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *fsp,
 	struct shadow_copy_data *shadow_copy_data, bool labels)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "get_shadow_copy_data");
+	gflog_debug(GFARM_MSG_UNFIXED, "get_shadow_copy_data: fsp=%p", fsp);
 	gflog_info(GFARM_MSG_UNFIXED, "get_shadow_copy_data: %s",
 	    strerror(ENOSYS));
 	errno = ENOSYS;
@@ -244,7 +243,7 @@ gfvfs_statvfs(struct vfs_handle_struct *handle, const char *path,
 	gfarm_off_t used, avail, files;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "statvfs: path %s", path);
+	gflog_debug(GFARM_MSG_UNFIXED, "statvfs: path=%s", path);
 	e = gfs_statfs(&used, &avail, &files);
 	if (e != GFARM_ERR_NO_ERROR) {
 		gflog_error(GFARM_MSG_UNFIXED, "gfs_statfs: %s",
@@ -571,6 +570,7 @@ gfvfs_create_file(struct vfs_handle_struct *handle, struct smb_request *req,
 	    smb_fname->base_name,
 	    smb_fname->stream_name != NULL ? smb_fname->stream_name : "");
 
+	*result_fsp = NULL;
 	result = SMB_VFS_NEXT_CREATE_FILE(
 	    handle, req, root_dir_fid, smb_fname, access_mask, share_access,
 	    create_disposition, create_options, file_attributes,

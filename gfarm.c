@@ -410,8 +410,16 @@ gfvfs_telldir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
 static void
 gfvfs_rewind_dir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
 {
+	struct gfvfs_dir *gdp = (struct gfvfs_dir *)dirp;
+	gfarm_error_t e;
+
 	gflog_debug(GFARM_MSG_UNFIXED, "rewind_dir: dir=%p", dirp);
-	/* XXX not implemented */
+	e = gfs_seekdir(gdp->dp, 0);
+	if (e != GFARM_ERR_NO_ERROR) {
+		gflog_error(GFARM_MSG_UNFIXED, "gfs_seekdir: %s",
+		    gfarm_error_string(e));
+		errno = gfarm_error_to_errno(e);
+	}
 	return;
 }
 

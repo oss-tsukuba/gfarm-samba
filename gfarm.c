@@ -1329,9 +1329,10 @@ gfvfs_streaminfo(struct vfs_handle_struct *handle, struct files_struct *fsp,
 	const char *fname, TALLOC_CTX *mem_ctx, unsigned int *num_streams,
 	struct stream_struct **streams)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "streaminfo(ENOSYS): fsp=%p, path=%s",
+	gflog_debug(GFARM_MSG_UNFIXED, "streaminfo(VFS_NEXT): fsp=%p, path=%s",
 	    fsp, fname);
-	return (NT_STATUS_NOT_IMPLEMENTED);
+	return (SMB_VFS_NEXT_STREAMINFO(handle, fsp, fname, mem_ctx,
+	    num_streams, streams));
 }
 
 static int
@@ -1762,138 +1763,260 @@ gfvfs_sys_acl_free_qualifier(vfs_handle_struct *handle, void *qualifier,
 }
 #endif /* unnecessary to hook */
 
+static int
+gfarm_error_to_errno_for_xattr(gfarm_error_t e)
+{
+	if (e == GFARM_ERR_NO_SUCH_OBJECT)
+		return (ENODATA);
+	else
+		return (gfarm_error_to_errno(e));
+}
+
 static ssize_t
 gfvfs_getxattr(vfs_handle_struct *handle, const char *path,
 	const char *name, void *value, size_t size)
 {
+	gfarm_error_t e;
+	size_t s = size;
+
 	gflog_debug(GFARM_MSG_UNFIXED, "getxattr: path=%s, name=%s, size=%d",
 	    path, name, (int)size);
-	gflog_info(GFARM_MSG_UNFIXED, "getxattr: %s", strerror(ENOSYS));
-	errno = ENOSYS;
-	return (-1);
+	e = gfs_getxattr_cached(path, name, value, &s);
+	if (e != GFARM_ERR_NO_ERROR) {
+		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_getxattr_cached", e);
+		errno = gfarm_error_to_errno_for_xattr(e);
+		return (-1);
+	}
+	return (s);
 }
 
 static ssize_t
 gfvfs_lgetxattr(vfs_handle_struct *handle, const char *path,
 	const char *name, void *value, size_t size)
 {
+	gfarm_error_t e;
+	size_t s = size;
+
 	gflog_debug(GFARM_MSG_UNFIXED, "lgetxattr: path=%s, name=%s",
 	    path, name);
-	gflog_info(GFARM_MSG_UNFIXED, "lgetxattr: %s", strerror(ENOSYS));
-	errno = ENOSYS;
-	return (-1);
+	e = gfs_lgetxattr_cached(path, name, value, &s);
+	if (e != GFARM_ERR_NO_ERROR) {
+		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_lgetxattr_cached", e);
+		errno = gfarm_error_to_errno_for_xattr(e);
+		return (-1);
+	}
+	return (s);
 }
 
 static ssize_t
 gfvfs_fgetxattr(vfs_handle_struct *handle,
 	struct files_struct *fsp, const char *name, void *value, size_t size)
 {
+	gfarm_error_t e;
+	size_t s = size;
+
 	gflog_debug(GFARM_MSG_UNFIXED, "fgetxattr: fsp=%p, name=%s, size=%d",
 	    fsp, name, (int)size);
-	gflog_info(GFARM_MSG_UNFIXED, "fgetxattr: %s", strerror(ENOSYS));
-	errno = ENOSYS;
-	return (-1);
+	e = gfs_fgetxattr((GFS_File)fsp->fh->gen_id, name, value, &s);
+	if (e != GFARM_ERR_NO_ERROR) {
+		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_fgetxattr", e);
+		errno = gfarm_error_to_errno_for_xattr(e);
+		return (-1);
+	}
+	return (s);
 }
 
 static ssize_t
 gfvfs_listxattr(vfs_handle_struct *handle, const char *path,
 	char *list, size_t size)
 {
+	gfarm_error_t e;
+	size_t s = size;
+
 	gflog_debug(GFARM_MSG_UNFIXED, "listxattr: path=%s, size=%d",
 	    path, (int)size);
-	gflog_info(GFARM_MSG_UNFIXED, "listxattr: %s", strerror(ENOSYS));
-	errno = ENOSYS;
-	return (-1);
+	e = gfs_listxattr(path, list, &s);
+	if (e != GFARM_ERR_NO_ERROR) {
+		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_listxattr", e);
+		errno = gfarm_error_to_errno(e);
+		return (-1);
+	}
+	return (s);
 }
 
 static ssize_t
 gfvfs_llistxattr(vfs_handle_struct *handle, const char *path,
 	char *list, size_t size)
 {
+	gfarm_error_t e;
+	size_t s = size;
+
 	gflog_debug(GFARM_MSG_UNFIXED, "llistxattr: path=%s, size=%d",
 	    path, (int)size);
-	gflog_info(GFARM_MSG_UNFIXED, "llistxattr: %s", strerror(ENOSYS));
-	errno = ENOSYS;
-	return (-1);
+	e = gfs_llistxattr(path, list, &s);
+	if (e != GFARM_ERR_NO_ERROR) {
+		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_llistxattr", e);
+		errno = gfarm_error_to_errno(e);
+		return (-1);
+	}
+	return (s);
 }
 
 static ssize_t
 gfvfs_flistxattr(vfs_handle_struct *handle,
 	struct files_struct *fsp, char *list, size_t size)
 {
+	gfarm_error_t e;
+	size_t s = size;
+
 	gflog_debug(GFARM_MSG_UNFIXED, "flistxattr: fsp=%p, size=%d",
 	    fsp, (int)size);
-	gflog_info(GFARM_MSG_UNFIXED, "flistxattr: %s", strerror(ENOSYS));
-	errno = ENOSYS;
-	return (-1);
+	/* XXX gfs_flistxattr() */
+	e = gfs_llistxattr(fsp->fsp_name->base_name, list, &s);
+	if (e != GFARM_ERR_NO_ERROR) {
+		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_llistxattr", e);
+		errno = gfarm_error_to_errno(e);
+		return (-1);
+	}
+	return (0);
 }
 
 static int
 gfvfs_removexattr(vfs_handle_struct *handle, const char *path,
 	const char *name)
 {
+	gfarm_error_t e;
+
 	gflog_debug(GFARM_MSG_UNFIXED, "removexattr: path=%s, name=%s",
 	    path, name);
-	gflog_info(GFARM_MSG_UNFIXED, "removexattr: %s", strerror(ENOSYS));
-	errno = ENOSYS;
-	return (-1);
+	e = gfs_removexattr(path, name);
+	if (e != GFARM_ERR_NO_ERROR) {
+		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_removexattr", e);
+		errno = gfarm_error_to_errno_for_xattr(e);
+		return (-1);
+	}
+	gfs_stat_cache_purge(path);
+	uncache_parent(path);
+	return (0);
 }
 
 static int
 gfvfs_lremovexattr(vfs_handle_struct *handle, const char *path,
 	const char *name)
 {
+	gfarm_error_t e;
+
 	gflog_debug(GFARM_MSG_UNFIXED, "lremovexattr: path=%s, name=%s",
 	    path, name);
-	gflog_info(GFARM_MSG_UNFIXED, "lremovexattr: %s", strerror(ENOSYS));
-	errno = ENOSYS;
-	return (-1);
+	e = gfs_lremovexattr(path, name);
+	if (e != GFARM_ERR_NO_ERROR) {
+		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_lremovexattr", e);
+		errno = gfarm_error_to_errno_for_xattr(e);
+		return (-1);
+	}
+	gfs_stat_cache_purge(path);
+	uncache_parent(path);
+	return (0);
 }
 
 static int
 gfvfs_fremovexattr(vfs_handle_struct *handle,
 	struct files_struct *fsp, const char *name)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "fremovexattr: name=%s", name);
-	gflog_info(GFARM_MSG_UNFIXED, "fremovexattr: %s", strerror(ENOSYS));
-	errno = ENOSYS;
-	return (-1);
+	gfarm_error_t e;
+
+	gflog_debug(GFARM_MSG_UNFIXED, "fremovexattr: fsp=%p, name=%s",
+	    fsp, name);
+	e = gfs_fremovexattr((GFS_File)fsp->fh->gen_id, name);
+	if (e != GFARM_ERR_NO_ERROR) {
+		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_fremovexattr", e);
+		errno = gfarm_error_to_errno_for_xattr(e);
+		return (-1);
+	}
+	gfs_stat_cache_purge(fsp->fsp_name->base_name);
+	uncache_parent(fsp->fsp_name->base_name);
+	return (0);
+}
+
+static int
+xattr_flags_to_gfarm(int flags)
+{
+	int gflags;
+
+	switch (flags) {
+	case XATTR_CREATE:
+		gflags = GFS_XATTR_CREATE;
+		break;
+	case XATTR_REPLACE:
+		gflags = GFS_XATTR_REPLACE;
+		break;
+	default:
+		gflags = flags; /* XXX */
+		break;
+	}
+	return (gflags);
 }
 
 static int
 gfvfs_setxattr(vfs_handle_struct *handle, const char *path,
 	const char *name, const void *value, size_t size, int flags)
 {
+	gfarm_error_t e;
+
 	gflog_debug(GFARM_MSG_UNFIXED,
 	    "setxattr: path=%s, name=%s, size=%d, flags=%d",
 	    path, name, (int)size, flags);
-	gflog_info(GFARM_MSG_UNFIXED, "setxattr: %s", strerror(ENOSYS));
-	errno = ENOSYS;
-	return (-1);
+	e = gfs_setxattr(path, name, value, size, xattr_flags_to_gfarm(flags));
+	if (e != GFARM_ERR_NO_ERROR) {
+		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_setxattr", e);
+		errno = gfarm_error_to_errno_for_xattr(e);
+		return (-1);
+	}
+	gfs_stat_cache_purge(path);
+	uncache_parent(path);
+	return (0);
 }
 
 static int
 gfvfs_lsetxattr(vfs_handle_struct *handle, const char *path,
 	const char *name, const void *value, size_t size, int flags)
 {
+	gfarm_error_t e;
+
 	gflog_debug(GFARM_MSG_UNFIXED,
 	    "lsetxattr: path=%s, name=%s, size=%d, flags=%d",
 	    path, name, (int)size, flags);
-	gflog_info(GFARM_MSG_UNFIXED, "lsetxattr: %s", strerror(ENOSYS));
-	errno = ENOSYS;
-	return (-1);
+	e = gfs_lsetxattr(path, name, value, size,
+	    xattr_flags_to_gfarm(flags));
+	if (e != GFARM_ERR_NO_ERROR) {
+		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_lsetxattr", e);
+		errno = gfarm_error_to_errno_for_xattr(e);
+		return (-1);
+	}
+	gfs_stat_cache_purge(path);
+	uncache_parent(path);
+	return (0);
 }
 
 static int
 gfvfs_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp,
 	const char *name, const void *value, size_t size, int flags)
 {
+	gfarm_error_t e;
+
 	gflog_debug(GFARM_MSG_UNFIXED,
 	    "fsetxattr: fsp=%p, name=%s, size=%d, flags=%d",
 	    fsp, name, (int)size, flags);
-	gflog_info(GFARM_MSG_UNFIXED, "fsetxattr: %s", strerror(ENOSYS));
-	errno = ENOSYS;
-	return (-1);
+	e = gfs_fsetxattr((GFS_File)fsp->fh->gen_id, name, value, size,
+	    xattr_flags_to_gfarm(flags));
+	if (e != GFARM_ERR_NO_ERROR) {
+		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_fsetxattr", e);
+		errno = gfarm_error_to_errno_for_xattr(e);
+		return (-1);
+	}
+	gfs_stat_cache_purge(fsp->fsp_name->base_name);
+	uncache_parent(fsp->fsp_name->base_name);
+	return (0);
 }
 
 static int
@@ -2058,7 +2181,7 @@ struct vfs_fn_pointers vfs_gfarm_fns = {
 	.chflags = gfvfs_chflags, /* ENOSYS */
 	.file_id_create = gfvfs_file_id_create,
 
-	.streaminfo = gfvfs_streaminfo, /* ENOSYS */
+	.streaminfo = gfvfs_streaminfo, /* transparent */
 	.get_real_filename = gfvfs_get_real_filename, /* EOPNOTSUPP */
 	.connectpath = gfvfs_connectpath, /* transparent */
 	.brl_lock_windows = gfvfs_brl_lock_windows, /* transparent */
@@ -2101,7 +2224,7 @@ struct vfs_fn_pointers vfs_gfarm_fns = {
 	.sys_acl_free_qualifier = gfvfs_sys_acl_free_qualifier,
 #endif /* unnecessary to hook */
 
-	/* EA operations */  /* ENOSYS */
+	/* EA operations */
 	.getxattr = gfvfs_getxattr,
 	.lgetxattr = gfvfs_lgetxattr,
 	.fgetxattr = gfvfs_fgetxattr,

@@ -147,6 +147,7 @@ switch_user(const char *user)
 
 	if (pwd != NULL)
 		return (seteuid(pwd->pw_uid));
+	errno = ENOENT;
 	return (-1);
 }
 
@@ -159,24 +160,61 @@ gfvfs_connect(vfs_handle_struct *handle, const char *service,
 	const char *user)
 {
 	gfarm_error_t e;
-	uid_t uid = getuid();
+	char *rpath;
+	uid_t uid = getuid(), saved_euid = geteuid();
 	const char *config = lp_parm_const_string(SNUM(handle->conn),
 	    "gfarm", "config", NULL);
+	static const char log_id[] = "gfarm_samba";
 
+	gflog_set_identifier(log_id);
 	if (config != NULL)
 		setenv("GFARM_CONFIG_FILE", config, 0);
-	if (uid == 0)
-		switch_user(user);
+	if (uid == 0) {
+		if (switch_user(user) == -1) {
+			int save_errno = errno;
+
+			gflog_error(GFARM_MSG_UNFIXED,
+			    "connect: unknown user=%s: %s",
+			    user, strerror(errno));
+			errno = save_errno;
+			return (-1);
+		}
+	}
+	assert(geteuid() != 0);
+
 	e = gfarm_initialize(NULL, NULL);
-	if (uid == 0)
-		seteuid(uid);
-	gflog_debug(GFARM_MSG_UNFIXED, "connect: %p, service=%s, user=%s",
-	    handle, service, user);
+	gflog_debug(GFARM_MSG_UNFIXED,
+	    "connect: %p, service=%s, user=%s, uid=%d/%d, config=%s",
+	    handle, service, user, getuid(), geteuid(), config);
+	if (e != GFARM_ERR_NO_ERROR) {
+		if (uid == 0) /* must exit as saved_euid */
+			seteuid(saved_euid);
+		gflog_error(GFARM_MSG_UNFIXED, "gfarm_initialize: %s",
+		    gfarm_error_string(e));
+		errno = gfarm_error_to_errno(e);
+		return (-1);
+	}
+	/*
+	 * Trying gfmd connection is nessessary here.  Because some
+	 * VFS callbacks by euid==0 works after this SMB_VFS_CONNECT
+	 * callback.  If a Gfarm connection by euid==0 with GSI
+	 * authentication succeeds once, the global user is recognized
+	 * to be a user corresponding to the host certificate all the
+	 * time.
+	 *
+	 * The callbacks behavior by euid==0 is:
+	 * (samba_3.6.x)/source3/smbd/service.c#make_connection_snum()
+	 */
+	e = gfs_realpath("/", &rpath);
+	if (uid == 0) /* must exit as saved_euid */
+		seteuid(saved_euid);
 	if (e == GFARM_ERR_NO_ERROR) {
+		free(rpath);
 		gfvfs_acl_id_init();
 		return (0);
 	}
-	gflog_error(GFARM_MSG_UNFIXED, "gfarm_initialize: %s",
+	(void)gfarm_terminate();
+	gflog_error(GFARM_MSG_UNFIXED, "initial gfs_realpath: %s",
 	    gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (-1);
@@ -273,7 +311,8 @@ static uint32_t
 gfvfs_fs_capabilities(struct vfs_handle_struct *handle,
 	enum timestamp_set_resolution *p_ts_res)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "fs_capabilities");
+	gflog_debug(GFARM_MSG_UNFIXED, "fs_capabilities: uid=%d/%d",
+	    getuid(), geteuid());
 	return (0);
 }
 
@@ -1001,7 +1040,8 @@ gfvfs_lchown(vfs_handle_struct *handle, const char *path,
 static int
 gfvfs_chdir(vfs_handle_struct *handle, const char *path)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "chdir: path=%s", path);
+	gflog_debug(GFARM_MSG_UNFIXED, "chdir: path=%s, uid=%d/%d",
+	    path, getuid(), geteuid());
 	if (path[0] == '\0')
 		return (0);
 	else if (path[0] == '/' && path[1] == '\0')
@@ -1270,7 +1310,8 @@ gfvfs_realpath(vfs_handle_struct *handle, const char *path)
 	char *rpath, *skip_path;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "realpath: path=%s", path);
+	gflog_debug(GFARM_MSG_UNFIXED, "realpath: path=%s, uid=%d/%d",
+	    path, getuid(), geteuid());
 	e = gfs_realpath(path, &rpath); /* slow? */
 	if (e == GFARM_ERR_NO_ERROR) {
 		skip_path = strdup(skip_prefix(rpath));

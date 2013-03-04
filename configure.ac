@@ -47,7 +47,12 @@ AC_CHECK_LIB([gfarm], [gfs_statdir],, [AC_MSG_ERROR([Gfarm-2.5.4 or later is req
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h unistd.h])
 AC_CHECK_HEADERS([gfarm/gfarm.h],, [AC_MSG_ERROR([gfarm/gfarm.h not found])])
-AC_CHECK_HEADERS([includes.h],, [AC_MSG_ERROR([Samba include files not found. Use --with-samba option to specify the samba source directory])])
+
+# Samba includes.h cannot be checked by AC_CHECK_HEADERS
+AC_MSG_CHECKING([Samba includes.h])
+AC_TRY_COMPILE([#include "includes.h"],[],,
+[AC_MSG_ERROR([Samba include files not found. Use --with-samba option to specify the samba source directory])])
+AC_MSG_RESULT([yes])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL

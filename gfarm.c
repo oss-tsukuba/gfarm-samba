@@ -160,7 +160,7 @@ gfvfs_connect(vfs_handle_struct *handle, const char *service,
 	const char *user)
 {
 	gfarm_error_t e;
-	char *rpath;
+	gfarm_off_t used, avail, files;
 	uid_t uid = getuid(), saved_euid = geteuid();
 	const char *config = lp_parm_const_string(SNUM(handle->conn),
 	    "gfarm", "config", NULL);
@@ -180,7 +180,6 @@ gfvfs_connect(vfs_handle_struct *handle, const char *service,
 			return (-1);
 		}
 	}
-	assert(geteuid() != 0);
 
 	e = gfarm_initialize(NULL, NULL);
 	gflog_debug(GFARM_MSG_UNFIXED,
@@ -196,28 +195,27 @@ gfvfs_connect(vfs_handle_struct *handle, const char *service,
 	}
 	/*
 	 * Trying gfmd connection is nessessary here.  Because some
-	 * VFS callbacks by euid==0 works after this SMB_VFS_CONNECT
-	 * callback.  If a Gfarm connection by euid==0 with GSI
-	 * authentication succeeds once, the global user is recognized
-	 * to be a user corresponding to the host certificate all the
-	 * time.
+	 * VFS callbacks by euid==0 will be called after this
+	 * SMB_VFS_CONNECT callback.  If a Gfarm connection by euid==0
+	 * with GSI authentication succeeds once, the global user is
+	 * recognized to be a user corresponding to the host
+	 * certificate all the time.
 	 *
 	 * The callbacks behavior by euid==0 is:
 	 * (samba_3.6.x)/source3/smbd/service.c#make_connection_snum()
 	 */
-	e = gfs_realpath("/", &rpath);
+	e = gfs_statfs(&used, &avail, &files);
 	if (uid == 0) /* must exit as saved_euid */
 		seteuid(saved_euid);
-	if (e == GFARM_ERR_NO_ERROR) {
-		free(rpath);
-		gfvfs_acl_id_init();
-		return (0);
+	if (e != GFARM_ERR_NO_ERROR) {
+		(void)gfarm_terminate();
+		gflog_error(GFARM_MSG_UNFIXED, "initial gfs_statfs: %s",
+		    gfarm_error_string(e));
+		errno = gfarm_error_to_errno(e);
+		return (-1);
 	}
-	(void)gfarm_terminate();
-	gflog_error(GFARM_MSG_UNFIXED, "initial gfs_realpath: %s",
-	    gfarm_error_string(e));
-	errno = gfarm_error_to_errno(e);
-	return (-1);
+	gfvfs_acl_id_init();
+	return (0);
 }
 
 static void

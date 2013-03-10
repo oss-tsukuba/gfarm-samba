@@ -171,7 +171,7 @@ gfvfs_data_init()
 static void
 gfvfs_data_free(void **data)
 {
-	struct gfvfs_data *gdata = (struct gfvfs_data *)*data;
+	struct gfvfs_data *gdata = *data;
 
 	free(gdata->cwd);
 	free(gdata);
@@ -180,17 +180,17 @@ gfvfs_data_free(void **data)
 static const char *
 gfvfs_fullpath(vfs_handle_struct *handle, const char *path)
 {
-	struct gfvfs_data *gdata = (struct gfvfs_data *)handle->data;
+	struct gfvfs_data *gdata = handle->data;
 	const char *cwd = gdata->cwd;
 	char *buf = gdata->tmp_path;
 
 	if (cwd == NULL || path[0] == '/')
 		return (path);
 	if (path[0] == '\0') /* "" */
-		return ((const char *)cwd);
+		return (cwd);
 	if (path[0] == '.') {
 		if (path[1] == '\0') /* "." */
-			return ((const char *)cwd);
+			return (cwd);
 		else if (path[1] == '/') /* "./NAME..." */
 			path += 2;
 	}
@@ -202,7 +202,7 @@ gfvfs_fullpath(vfs_handle_struct *handle, const char *path)
 			snprintf(buf, PATH_MAX + 1, "%s/%s", cwd, path);
 	} else
 		snprintf(buf, PATH_MAX + 1, "/%s/%s", cwd, path);
-	return ((const char *)buf);
+	return (buf);
 }
 
 /*
@@ -1141,7 +1141,7 @@ static int
 gfvfs_chdir(vfs_handle_struct *handle, const char *path)
 {
 	char *fullpath;
-	struct gfvfs_data *gdata = (struct gfvfs_data *)handle->data;
+	struct gfvfs_data *gdata = handle->data;
 
 	gflog_debug(GFARM_MSG_UNFIXED, "chdir: path=%s, uid=%d/%d",
 	    path, getuid(), geteuid());
@@ -1151,8 +1151,7 @@ gfvfs_chdir(vfs_handle_struct *handle, const char *path)
 		errno = ENOMEM;;
 		return (-1);
 	}
-	if (gdata->cwd != NULL)
-		free(gdata->cwd);
+	free(gdata->cwd);
 	gdata->cwd = fullpath;
 	return (0);
 }
@@ -1160,7 +1159,7 @@ gfvfs_chdir(vfs_handle_struct *handle, const char *path)
 static char *
 gfvfs_getwd(vfs_handle_struct *handle, char *buf)
 {
-	struct gfvfs_data *gdata = (struct gfvfs_data *)handle->data;
+	struct gfvfs_data *gdata = handle->data;
 
 	gflog_debug(GFARM_MSG_UNFIXED, "getwd: cwd=%s", gdata->cwd);
 	return (gdata->cwd);

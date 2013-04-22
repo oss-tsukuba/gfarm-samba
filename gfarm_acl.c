@@ -12,6 +12,7 @@
 #include <gfarm/gfarm.h>
 
 #include "gfarm_id.h"
+#include "msgno/msgno.h"
 
 void
 gfvfs_acl_id_init()
@@ -57,7 +58,7 @@ acl_gfarm_ace_to_smb_ace(
 		s_ace->a_type = SMB_ACL_MASK;
 		break;
 	default:
-		gflog_error(GFARM_MSG_UNFIXED,
+		gflog_error(GFARM_MSG_3000188,
 		    "unknown tag: type=%u", (unsigned int)tag);
 		errno = EINVAL;
 		return (False);
@@ -68,7 +69,7 @@ acl_gfarm_ace_to_smb_ace(
 		(void)gfs_acl_get_qualifier(g_ace, &name);
 		e = gfarm_id_user_to_uid(path, name, &uid);
 		if (e != GFARM_ERR_NO_ERROR) {
-			gflog_error(GFARM_MSG_UNFIXED,
+			gflog_error(GFARM_MSG_3000189,
 			    "gfarm_id_user_to_uid: %s", gfarm_error_string(e));
 			errno = gfarm_error_to_errno(e);
 			return (False);
@@ -79,7 +80,7 @@ acl_gfarm_ace_to_smb_ace(
 		(void)gfs_acl_get_qualifier(g_ace, &name);
 		e = gfarm_id_group_to_gid(path, name, &gid);
 		if (e != GFARM_ERR_NO_ERROR) {
-			gflog_error(GFARM_MSG_UNFIXED,
+			gflog_error(GFARM_MSG_3000190,
 			    "gfarm_id_group_to_gid: %s",
 			    gfarm_error_string(e));
 			errno = gfarm_error_to_errno(e);
@@ -117,7 +118,7 @@ gfvfs_gfarm_acl_to_smb_acl(const char *path, gfarm_acl_t acl)
 	int save_errno;
 
 	if (s_acl == NULL) {
-		gflog_error(GFARM_MSG_UNFIXED,
+		gflog_error(GFARM_MSG_3000191,
 		    "gfarm_acl_to_smb_acl: no memory");
 		errno = ENOMEM;
 		return (NULL);
@@ -129,7 +130,7 @@ gfvfs_gfarm_acl_to_smb_acl(const char *path, gfarm_acl_t acl)
 		    (sizeof(struct smb_acl_entry) * (s_acl->count + 1)));
 		if (tmp == NULL) {
 			SAFE_FREE(s_acl);
-			gflog_error(GFARM_MSG_UNFIXED,
+			gflog_error(GFARM_MSG_3000192,
 			    "gfarm_acl_to_smb_acl: no memory");
 			errno = ENOMEM;
 			return (NULL);
@@ -181,7 +182,7 @@ gfvfs_smb_acl_to_gfarm_acl(const char *path, SMB_ACL_T s_acl)
 
 	e = gfs_acl_init(s_acl->count, &g_acl);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gflog_error(GFARM_MSG_UNFIXED, "gfs_acl_init: %s",
+		gflog_error(GFARM_MSG_3000193, "gfs_acl_init: %s",
 		    gfarm_error_string(e));
 		errno = gfarm_error_to_errno(e);
 		return (NULL);
@@ -193,7 +194,7 @@ gfvfs_smb_acl_to_gfarm_acl(const char *path, SMB_ACL_T s_acl)
 
 		e = gfs_acl_create_entry(&g_acl, &ent);
 		if (e != GFARM_ERR_NO_ERROR) {
-			gflog_error(GFARM_MSG_UNFIXED,
+			gflog_error(GFARM_MSG_3000194,
 			   "gfs_acl_create_entry: %s", gfarm_error_string(e));
 			goto fail;
 		}
@@ -217,7 +218,7 @@ gfvfs_smb_acl_to_gfarm_acl(const char *path, SMB_ACL_T s_acl)
 			tag = GFARM_ACL_MASK;
 			break;
 		default:
-			gflog_error(GFARM_MSG_UNFIXED,
+			gflog_error(GFARM_MSG_3000195,
 			    "unknown tag value %d", entry->a_type);
 			e = GFARM_ERR_INVALID_ARGUMENT;
 			goto fail;
@@ -228,7 +229,7 @@ gfvfs_smb_acl_to_gfarm_acl(const char *path, SMB_ACL_T s_acl)
 		case SMB_ACL_USER:
 			e = gfarm_id_uid_to_user(path, entry->uid, &name);
 			if (e != GFARM_ERR_NO_ERROR) {
-				gflog_error(GFARM_MSG_UNFIXED,
+				gflog_error(GFARM_MSG_3000196,
 				    "gfarm_id_uid_to_user: %s",
 				    gfarm_error_string(e));
 				goto fail;
@@ -238,7 +239,7 @@ gfvfs_smb_acl_to_gfarm_acl(const char *path, SMB_ACL_T s_acl)
 		case SMB_ACL_GROUP:
 			e = gfarm_id_gid_to_group(path, entry->gid, &name);
 			if (e != GFARM_ERR_NO_ERROR) {
-				gflog_error(GFARM_MSG_UNFIXED,
+				gflog_error(GFARM_MSG_3000197,
 				    "gfarm_id_gid_to_group: %s",
 				    gfarm_error_string(e));
 				goto fail;
@@ -254,7 +255,7 @@ gfvfs_smb_acl_to_gfarm_acl(const char *path, SMB_ACL_T s_acl)
 	gfs_acl_sort(g_acl);
 	e = gfs_acl_valid(g_acl);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gflog_error(GFARM_MSG_UNFIXED,
+		gflog_error(GFARM_MSG_3000198,
 		    "ACL is invalid for set: %s", gfarm_error_string(e));
 		goto fail;
 	}

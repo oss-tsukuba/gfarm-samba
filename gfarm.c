@@ -42,6 +42,7 @@
 
 #include "gfarm_acl.h"
 #include "gfarm_id.h"
+#include "msgno/msgno.h"
 
 /* internal interface */
 int gfs_pio_fileno(GFS_File);
@@ -96,7 +97,7 @@ get_uid(const char *path, const char *user)
 
 	e = gfarm_id_user_to_uid(path, user, &uid);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gflog_warning(GFARM_MSG_UNFIXED,
+		gflog_warning(GFARM_MSG_3000001,
 		    "get_uid(%s): %s", user, gfarm_error_string(e));
 		return (gfarm_id_nobody_uid());
 	}
@@ -111,7 +112,7 @@ get_gid(const char *path, const char *group)
 
 	e = gfarm_id_group_to_gid(path, group, &gid);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gflog_warning(GFARM_MSG_UNFIXED,
+		gflog_warning(GFARM_MSG_3000002,
 		    "get_gid(%s): %s", group, gfarm_error_string(e));
 		return (gfarm_id_nogroup_gid());
 	}
@@ -228,7 +229,7 @@ gfvfs_connect(vfs_handle_struct *handle, const char *service,
 		if (switch_user(user) == -1) {
 			int save_errno = errno;
 
-			gflog_error(GFARM_MSG_UNFIXED,
+			gflog_error(GFARM_MSG_3000003,
 			    "connect: unknown user=%s: %s",
 			    user, strerror(errno));
 			errno = save_errno;
@@ -237,13 +238,13 @@ gfvfs_connect(vfs_handle_struct *handle, const char *service,
 	}
 
 	e = gfarm_initialize(NULL, NULL);
-	gflog_debug(GFARM_MSG_UNFIXED,
+	gflog_debug(GFARM_MSG_3000004,
 	    "connect: %p, service=%s, user=%s, uid=%d/%d, config=%s",
 	    handle, service, user, getuid(), geteuid(), config);
 	if (e != GFARM_ERR_NO_ERROR) {
 		if (uid == 0) /* must exit as saved_euid */
 			seteuid(saved_euid);
-		gflog_error(GFARM_MSG_UNFIXED, "gfarm_initialize: %s",
+		gflog_error(GFARM_MSG_3000005, "gfarm_initialize: %s",
 		    gfarm_error_string(e));
 		errno = gfarm_error_to_errno(e);
 		return (-1);
@@ -264,7 +265,7 @@ gfvfs_connect(vfs_handle_struct *handle, const char *service,
 		seteuid(saved_euid);
 	if (e != GFARM_ERR_NO_ERROR) {
 		(void)gfarm_terminate();
-		gflog_error(GFARM_MSG_UNFIXED, "initial gfs_statfs: %s",
+		gflog_error(GFARM_MSG_3000006, "initial gfs_statfs: %s",
 		    gfarm_error_string(e));
 		errno = gfarm_error_to_errno(e);
 		return (-1);
@@ -274,7 +275,7 @@ gfvfs_connect(vfs_handle_struct *handle, const char *service,
 	gdata = gfvfs_data_init();
 	if (gdata == NULL) {
 		(void)gfarm_terminate();
-		gflog_error(GFARM_MSG_UNFIXED, "connect: no memory");
+		gflog_error(GFARM_MSG_3000007, "connect: no memory");
 		errno = ENOMEM;
 		return (-1);
 	}
@@ -288,10 +289,10 @@ gfvfs_disconnect(vfs_handle_struct *handle)
 {
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "disconnect: %p", handle);
+	gflog_debug(GFARM_MSG_3000008, "disconnect: %p", handle);
 	e = gfarm_terminate();
 	if (e != GFARM_ERR_NO_ERROR) {
-		gflog_error(GFARM_MSG_UNFIXED, "gfarm_terminate: %s",
+		gflog_error(GFARM_MSG_3000009, "gfarm_terminate: %s",
 		    gfarm_error_string(e));
 		errno = gfarm_error_to_errno(e);
 	}
@@ -304,10 +305,10 @@ gfvfs_disk_free(vfs_handle_struct *handle, const char *path,
 	gfarm_off_t used, avail, files;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "disk_free: path=%s", path);
+	gflog_debug(GFARM_MSG_3000010, "disk_free: path=%s", path);
 	e = gfs_statfs(&used, &avail, &files);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gflog_error(GFARM_MSG_UNFIXED, "gfs_statfs: %s",
+		gflog_error(GFARM_MSG_3000011, "gfs_statfs: %s",
 		    gfarm_error_string(e));
 		errno = gfarm_error_to_errno(e);
 		return (-1);
@@ -322,7 +323,7 @@ static int
 gfvfs_get_quota(vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype,
 	unid_t id, SMB_DISK_QUOTA *dq)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "get_quota(ENOSYS): qtype=%d", qtype);
+	gflog_debug(GFARM_MSG_3000012, "get_quota(ENOSYS): qtype=%d", qtype);
 	errno = ENOSYS;
 	return (-1);
 }
@@ -331,7 +332,7 @@ static int
 gfvfs_set_quota(vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype,
 	unid_t id, SMB_DISK_QUOTA *dq)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "set_quota(ENOSYS): qtype=%d", qtype);
+	gflog_debug(GFARM_MSG_3000013, "set_quota(ENOSYS): qtype=%d", qtype);
 	errno = ENOSYS;
 	return (-1);
 }
@@ -340,7 +341,7 @@ static int
 gfvfs_get_shadow_copy_data(vfs_handle_struct *handle, files_struct *fsp,
 	struct shadow_copy_data *shadow_copy_data, bool labels)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "get_shadow_copy_data(ENOSYS): fsp=%p",
+	gflog_debug(GFARM_MSG_3000014, "get_shadow_copy_data(ENOSYS): fsp=%p",
 	    fsp);
 	errno = ENOSYS;
 	return (-1);
@@ -353,10 +354,10 @@ gfvfs_statvfs(struct vfs_handle_struct *handle, const char *path,
 	gfarm_off_t used, avail, files;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "statvfs: path=%s", path);
+	gflog_debug(GFARM_MSG_3000015, "statvfs: path=%s", path);
 	e = gfs_statfs(&used, &avail, &files);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gflog_error(GFARM_MSG_UNFIXED, "gfs_statfs: %s",
+		gflog_error(GFARM_MSG_3000016, "gfs_statfs: %s",
 		    gfarm_error_string(e));
 		errno = gfarm_error_to_errno(e);
 		return (-1);
@@ -374,7 +375,7 @@ static uint32_t
 gfvfs_fs_capabilities(struct vfs_handle_struct *handle,
 	enum timestamp_set_resolution *p_ts_res)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "fs_capabilities: uid=%d/%d",
+	gflog_debug(GFARM_MSG_3000017, "fs_capabilities: uid=%d/%d",
 	    getuid(), geteuid());
 	return (0);
 }
@@ -393,7 +394,7 @@ gfvfs_opendir(vfs_handle_struct *handle, const char *fname,
 	gfarm_error_t e;
 	const char *fullpath;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "opendir: path=%s, mask=%s",
+	gflog_debug(GFARM_MSG_3000018, "opendir: path=%s, mask=%s",
 	    fname, mask);
 	fullpath = gfvfs_fullpath(handle, fname);
 	e = gfs_opendir_caching(fullpath, &dp);
@@ -402,7 +403,7 @@ gfvfs_opendir(vfs_handle_struct *handle, const char *fname,
 		if (gdp != NULL)
 			gdp->path = strdup(fullpath);
 		if (gdp == NULL || gdp->path == NULL) {
-			gflog_error(GFARM_MSG_UNFIXED, "opendir: no memory");
+			gflog_error(GFARM_MSG_3000019, "opendir: no memory");
 			free(gdp->path);
 			free(gdp);
 			gfs_closedir(dp);
@@ -411,7 +412,7 @@ gfvfs_opendir(vfs_handle_struct *handle, const char *fname,
 		gdp->dp = dp;
 		return ((SMB_STRUCT_DIR *)gdp);
 	}
-	gflog_error(GFARM_MSG_UNFIXED, "gfs_opendir: %s",
+	gflog_error(GFARM_MSG_3000020, "gfs_opendir: %s",
 	    gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (NULL);
@@ -421,7 +422,7 @@ static SMB_STRUCT_DIR *
 gfvfs_fdopendir(vfs_handle_struct *handle, files_struct *fsp,
 	const char *mask, uint32 attr)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "fdopendir: ENOSYS");
+	gflog_debug(GFARM_MSG_3000021, "fdopendir: ENOSYS");
 	errno = ENOSYS; /* use gfvfs_opendir() instead of this */
 	return (NULL);
 }
@@ -439,13 +440,13 @@ gfvfs_readdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp,
 	size_t len;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "readdir: dir=%p", dirp);
+	gflog_debug(GFARM_MSG_3000022, "readdir: dir=%p", dirp);
 	if (sbuf)
 		SET_STAT_INVALID(*sbuf);
 
 	e = gfs_readdir(gdp->dp, &de);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gflog_error(GFARM_MSG_UNFIXED, "gfs_readdir: %s",
+		gflog_error(GFARM_MSG_3000023, "gfs_readdir: %s",
 		    gfarm_error_string(e));
 		errno = gfarm_error_to_errno(e);
 		return (NULL);
@@ -453,7 +454,7 @@ gfvfs_readdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp,
 	if (de == NULL)
 		return (NULL);
 
-	gflog_debug(GFARM_MSG_UNFIXED, "readdir: name=%s", de->d_name);
+	gflog_debug(GFARM_MSG_3000024, "readdir: name=%s", de->d_name);
 	ssd.d_ino = de->d_fileno;
 	ssd.d_reclen = de->d_reclen;
 	ssd.d_type = de->d_type;
@@ -466,7 +467,7 @@ gfvfs_readdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp,
 		if (path == NULL)
 			return (&ssd);
 		snprintf(path, len, "%s/%s", gdp->path, de->d_name);
-		gflog_debug(GFARM_MSG_UNFIXED, "lstat: path=%s", path);
+		gflog_debug(GFARM_MSG_3000025, "lstat: path=%s", path);
 		e = gfs_lstat_cached(path, &st);
 		if (e == GFARM_ERR_NO_ERROR) {
 			copy_gfs_stat(path, sbuf, &st);
@@ -483,11 +484,11 @@ gfvfs_seekdir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp, long offset)
 	struct gfvfs_dir *gdp = (struct gfvfs_dir *)dirp;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "seekdir: dir=%p, offset=%ld",
+	gflog_debug(GFARM_MSG_3000026, "seekdir: dir=%p, offset=%ld",
 	    dirp, offset);
 	e = gfs_seekdir(gdp->dp, offset);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gflog_error(GFARM_MSG_UNFIXED, "gfs_seekdir: %s",
+		gflog_error(GFARM_MSG_3000027, "gfs_seekdir: %s",
 		    gfarm_error_string(e));
 		errno = gfarm_error_to_errno(e);
 	}
@@ -501,10 +502,10 @@ gfvfs_telldir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
 	struct gfvfs_dir *gdp = (struct gfvfs_dir *)dirp;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "telldir: dir=%p", dirp);
+	gflog_debug(GFARM_MSG_3000028, "telldir: dir=%p", dirp);
 	e = gfs_telldir(gdp->dp, &off);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gflog_error(GFARM_MSG_UNFIXED, "gfs_telldir: %s",
+		gflog_error(GFARM_MSG_3000029, "gfs_telldir: %s",
 		    gfarm_error_string(e));
 		errno = gfarm_error_to_errno(e);
 		return (-1);
@@ -518,10 +519,10 @@ gfvfs_rewind_dir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
 	struct gfvfs_dir *gdp = (struct gfvfs_dir *)dirp;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "rewind_dir: dir=%p", dirp);
+	gflog_debug(GFARM_MSG_3000030, "rewind_dir: dir=%p", dirp);
 	e = gfs_seekdir(gdp->dp, 0);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gflog_error(GFARM_MSG_UNFIXED, "gfs_seekdir: %s",
+		gflog_error(GFARM_MSG_3000031, "gfs_seekdir: %s",
 		    gfarm_error_string(e));
 		errno = gfarm_error_to_errno(e);
 	}
@@ -534,11 +535,11 @@ uncache_parent(const char *path)
 	char *p = gfarm_url_dir(path);
 
 	if (p == NULL) {
-		gflog_error(GFARM_MSG_UNFIXED, "uncache_parent(%s): no memory",
+		gflog_error(GFARM_MSG_3000032, "uncache_parent(%s): no memory",
 		    path);
 		return;
 	}
-	gflog_debug(GFARM_MSG_UNFIXED, "uncache_parent: parent=%s, path=%s",
+	gflog_debug(GFARM_MSG_3000033, "uncache_parent: parent=%s, path=%s",
 	    p, path);
 	gfs_stat_cache_purge(p);
 	free(p);
@@ -550,14 +551,14 @@ gfvfs_mkdir(vfs_handle_struct *handle, const char *path, mode_t mode)
 	gfarm_error_t e;
 	const char *fullpath;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "mkdir: path=%s, mode=%o", path, mode);
+	gflog_debug(GFARM_MSG_3000034, "mkdir: path=%s, mode=%o", path, mode);
 	fullpath = gfvfs_fullpath(handle, path);
 	e = gfs_mkdir(fullpath, mode & GFARM_S_ALLPERM);
 	if (e == GFARM_ERR_NO_ERROR) {
 		uncache_parent(fullpath);
 		return (0);
 	}
-	gfvfs_error(GFARM_MSG_UNFIXED, "gfs_mkdir", e);
+	gfvfs_error(GFARM_MSG_3000035, "gfs_mkdir", e);
 	errno = gfarm_error_to_errno(e);
 	return (-1);
 }
@@ -568,7 +569,7 @@ gfvfs_rmdir(vfs_handle_struct *handle, const char *path)
 	gfarm_error_t e;
 	const char *fullpath;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "rmdir: path=%s", path);
+	gflog_debug(GFARM_MSG_3000036, "rmdir: path=%s", path);
 	fullpath = gfvfs_fullpath(handle, path);
 	e = gfs_rmdir(fullpath);
 	if (e == GFARM_ERR_NO_ERROR) {
@@ -576,7 +577,7 @@ gfvfs_rmdir(vfs_handle_struct *handle, const char *path)
 		uncache_parent(fullpath);
 		return (0);
 	}
-	gflog_error(GFARM_MSG_UNFIXED, "gfs_rmdir: %s", gfarm_error_string(e));
+	gflog_error(GFARM_MSG_3000037, "gfs_rmdir: %s", gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (-1);
 }
@@ -587,13 +588,13 @@ gfvfs_closedir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
 	struct gfvfs_dir *gdp = (struct gfvfs_dir *)dirp;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "closedir: dir=%p", dirp);
+	gflog_debug(GFARM_MSG_3000038, "closedir: dir=%p", dirp);
 	e = gfs_closedir(gdp->dp);
 	free(gdp->path);
 	free(gdp);
 	if (e == GFARM_ERR_NO_ERROR)
 		return (0);
-	gflog_error(GFARM_MSG_UNFIXED, "gfs_closedir: %s",
+	gflog_error(GFARM_MSG_3000039, "gfs_closedir: %s",
 	    gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (-1);
@@ -602,7 +603,7 @@ gfvfs_closedir(vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
 static void
 gfvfs_init_search_op(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "init_search_op: dir=%p", dirp);
+	gflog_debug(GFARM_MSG_3000040, "init_search_op: dir=%p", dirp);
 	return;
 }
 
@@ -619,7 +620,7 @@ gfvfs_open(vfs_handle_struct *handle, struct smb_filename *smb_fname,
 	struct gfvfs_dir *gdp;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED,
+	gflog_debug(GFARM_MSG_3000041,
 	    "open: fsp=%p, path=%s%s, flags=%x, mode=%o, is_dir=%d",
 	    fsp, fname, stream != NULL ? stream : "",
 	    flags, mode, fsp->is_directory);
@@ -628,7 +629,7 @@ gfvfs_open(vfs_handle_struct *handle, struct smb_filename *smb_fname,
 		return (-1);
 	}
 	if (g_flags < 0) {
-		gflog_error(GFARM_MSG_UNFIXED, "open: %s", strerror(EINVAL));
+		gflog_error(GFARM_MSG_3000042, "open: %s", strerror(EINVAL));
 		errno = EINVAL;
 		return (-1);
 	}
@@ -646,7 +647,7 @@ gfvfs_open(vfs_handle_struct *handle, struct smb_filename *smb_fname,
 		e = gfs_pio_open(fullpath, g_flags, &gf);
 	}
 	if (e != GFARM_ERR_NO_ERROR) {
-		gfvfs_error(GFARM_MSG_UNFIXED, msg, e);
+		gfvfs_error(GFARM_MSG_3000043, msg, e);
 		errno = gfarm_error_to_errno(e);
 		return (-1);
 	}
@@ -664,7 +665,7 @@ gfvfs_open(vfs_handle_struct *handle, struct smb_filename *smb_fname,
 		if (gdp != NULL)
 			gdp->path = strdup(fullpath);
 		if (gdp == NULL || gdp->path == NULL) {
-			gflog_error(GFARM_MSG_UNFIXED, "open: no memory");
+			gflog_error(GFARM_MSG_3000044, "open: no memory");
 			free(gdp->path);
 			free(gdp);
 			gfs_closedir(dp);
@@ -693,7 +694,7 @@ gfvfs_create_file(struct vfs_handle_struct *handle, struct smb_request *req,
 	NTSTATUS result;
 	const char *str_create_disposition;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "create_file(VFS_NEXT): %s%s",
+	gflog_debug(GFARM_MSG_3000045, "create_file(VFS_NEXT): %s%s",
 	    smb_fname->base_name,
 	    smb_fname->stream_name != NULL ? smb_fname->stream_name : "");
 
@@ -726,7 +727,7 @@ gfvfs_create_file(struct vfs_handle_struct *handle, struct smb_request *req,
 	default:
 		str_create_disposition = "UNKNOWN";
 	}
-	gflog_debug(GFARM_MSG_UNFIXED,
+	gflog_debug(GFARM_MSG_3000046,
 	    "create_file: %p|%s|0x%x|%s|%s|%s%s",
 	    *result_fsp, nt_errstr(result), access_mask,
 	    create_options & FILE_DIRECTORY_FILE ? "DIR" : "FILE",
@@ -742,7 +743,7 @@ gfvfs_close_fn(vfs_handle_struct *handle, files_struct *fsp)
 	gfarm_error_t e;
 	char *msg;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "close_fn: fsp=%p", fsp);
+	gflog_debug(GFARM_MSG_3000047, "close_fn: fsp=%p", fsp);
 	if (!fsp->is_directory) {
 		msg = "gfs_pio_close";
 		e = gfs_pio_close((GFS_File)fsp->fh->gen_id);
@@ -756,7 +757,7 @@ gfvfs_close_fn(vfs_handle_struct *handle, files_struct *fsp)
 	}
 	if (e == GFARM_ERR_NO_ERROR)
 		return (0);
-	gflog_error(GFARM_MSG_UNFIXED, "%s: %s", msg, gfarm_error_string(e));
+	gflog_error(GFARM_MSG_3000048, "%s: %s", msg, gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (-1);
 }
@@ -768,12 +769,12 @@ gfvfs_vfs_read(vfs_handle_struct *handle, files_struct *fsp,
 	gfarm_error_t e;
 	int rv;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "read: fsp=%p, size=%lu", fsp,
+	gflog_debug(GFARM_MSG_3000049, "read: fsp=%p, size=%lu", fsp,
 	    (unsigned long)n);
 	e = gfs_pio_read((GFS_File)fsp->fh->gen_id, data, n, &rv);
 	if (e == GFARM_ERR_NO_ERROR)
 		return (rv);
-	gflog_error(GFARM_MSG_UNFIXED, "gfs_pio_read: %s",
+	gflog_error(GFARM_MSG_3000050, "gfs_pio_read: %s",
 	    gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (-1);
@@ -788,13 +789,13 @@ gfvfs_pread(vfs_handle_struct *handle, files_struct *fsp,
 	GFS_File gf = (GFS_File)fsp->fh->gen_id;
 	int rv;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "pread: fsp=%p, size=%lu, offset=%lld",
+	gflog_debug(GFARM_MSG_3000051, "pread: fsp=%p, size=%lu, offset=%lld",
 	    fsp, (unsigned long)n, (long long)offset);
 	e = gfs_pio_seek(gf, (off_t)offset, GFARM_SEEK_SET, &off);
 	if (e == GFARM_ERR_NO_ERROR)
 		e = gfs_pio_read(gf, data, n, &rv);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gflog_error(GFARM_MSG_UNFIXED, "gfs_pio_pread: %s",
+		gflog_error(GFARM_MSG_3000052, "gfs_pio_pread: %s",
 		    gfarm_error_string(e));
 		errno = gfarm_error_to_errno(e);
 		return (-1);
@@ -809,7 +810,7 @@ gfvfs_write(vfs_handle_struct *handle, files_struct *fsp,
 	gfarm_error_t e;
 	int rv;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "write: fsp=%p, size=%lu", fsp,
+	gflog_debug(GFARM_MSG_3000053, "write: fsp=%p, size=%lu", fsp,
 	    (unsigned long)n);
 	e = gfs_pio_write((GFS_File)fsp->fh->gen_id, data, n, &rv);
 	if (e == GFARM_ERR_NO_ERROR) {
@@ -819,7 +820,7 @@ gfvfs_write(vfs_handle_struct *handle, files_struct *fsp,
 		gfs_stat_cache_purge(fullpath);
 		return (rv);
 	}
-	gflog_error(GFARM_MSG_UNFIXED, "gfs_pio_write: %s",
+	gflog_error(GFARM_MSG_3000054, "gfs_pio_write: %s",
 	    gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (-1);
@@ -834,14 +835,14 @@ gfvfs_pwrite(vfs_handle_struct *handle, files_struct *fsp,
 	int rv;
 	const char *fullpath;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "pwrite: fsp=%p, size=%lu, offset=%lld",
+	gflog_debug(GFARM_MSG_3000055, "pwrite: fsp=%p, size=%lu, offset=%lld",
 	    data, (unsigned long)n, (long long)offset);
 	e = gfs_pio_seek((GFS_File)fsp->fh->gen_id, offset, GFARM_SEEK_SET,
 		&off);
 	if (e == GFARM_ERR_NO_ERROR)
 		e = gfs_pio_write((GFS_File)fsp->fh->gen_id, data, n, &rv);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gflog_error(GFARM_MSG_UNFIXED, "gfs_pio_pwrite: %s",
+		gflog_error(GFARM_MSG_3000056, "gfs_pio_pwrite: %s",
 		    gfarm_error_string(e));
 		errno = gfarm_error_to_errno(e);
 		return (-1);
@@ -858,13 +859,13 @@ gfvfs_lseek(vfs_handle_struct *handle, files_struct *fsp,
 	gfarm_off_t off;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "lseek: fsp=%p, offset=%ld, whence=%d",
+	gflog_debug(GFARM_MSG_3000057, "lseek: fsp=%p, offset=%ld, whence=%d",
 	    fsp, (long)offset, whence);
 	e = gfs_pio_seek((GFS_File)fsp->fh->gen_id, offset, GFARM_SEEK_SET,
 		&off);
 	if (e == GFARM_ERR_NO_ERROR)
 		return (off);
-	gflog_error(GFARM_MSG_UNFIXED, "gfs_pio_seek: %s",
+	gflog_error(GFARM_MSG_3000058, "gfs_pio_seek: %s",
 	    gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (-1);
@@ -874,7 +875,7 @@ static ssize_t
 gfvfs_sendfile(vfs_handle_struct *handle, int tofd, files_struct *fromfsp,
 	const DATA_BLOB *hdr, SMB_OFF_T offset, size_t n)
 {
-	gflog_debug(GFARM_MSG_UNFIXED,
+	gflog_debug(GFARM_MSG_3000059,
 	    "sendfile(ENOSYS): to_fd=%d, from_fsp=%p", tofd, fromfsp);
 	errno = ENOSYS;
 	return (-1);
@@ -884,7 +885,7 @@ static ssize_t
 gfvfs_recvfile(vfs_handle_struct *handle, int fromfd, files_struct *tofsp,
 	SMB_OFF_T offset, size_t n)
 {
-	gflog_debug(GFARM_MSG_UNFIXED,
+	gflog_debug(GFARM_MSG_3000060,
 	    "recvfile(ENOSYS): from_fd=%d, to_fsp=%p", fromfd, tofsp);
 	errno = ENOSYS;
 	return (-1);
@@ -902,7 +903,7 @@ gfvfs_rename(vfs_handle_struct *handle,
 	char *fullold, *fullnew;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "rename: old=%s%s, new=%s%s",
+	gflog_debug(GFARM_MSG_3000061, "rename: old=%s%s, new=%s%s",
 	    oldname, old_stream != NULL ? old_stream : "",
 	    newname, new_stream != NULL ? new_stream : "");
 	if (old_stream != NULL || new_stream != NULL) {
@@ -914,7 +915,7 @@ gfvfs_rename(vfs_handle_struct *handle,
 	if (fullold == NULL || fullnew == NULL) {
 		free(fullold);
 		free(fullnew);
-		gflog_error(GFARM_MSG_UNFIXED, "rename: no memory");
+		gflog_error(GFARM_MSG_3000062, "rename: no memory");
 		errno = ENOMEM;
 		return (-1);
 	}
@@ -930,7 +931,7 @@ gfvfs_rename(vfs_handle_struct *handle,
 	}
 	free(fullold);
 	free(fullnew);
-	gflog_error(GFARM_MSG_UNFIXED,
+	gflog_error(GFARM_MSG_3000063,
 	    "gfs_rename: %s", gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (-1);
@@ -941,11 +942,11 @@ gfvfs_fsync(vfs_handle_struct *handle, files_struct *fsp)
 {
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "fsync: fsp=%p", fsp);
+	gflog_debug(GFARM_MSG_3000064, "fsync: fsp=%p", fsp);
 	e = gfs_pio_sync((GFS_File)fsp->fh->gen_id);
 	if (e == GFARM_ERR_NO_ERROR)
 		return (0);
-	gflog_error(GFARM_MSG_UNFIXED, "gfs_pio_sync: %s",
+	gflog_error(GFARM_MSG_3000065, "gfs_pio_sync: %s",
 	    gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (-1);
@@ -959,7 +960,7 @@ gfvfs_stat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
 	const char *stream = smb_fname->stream_name;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "stat: path=%s%s",
+	gflog_debug(GFARM_MSG_3000066, "stat: path=%s%s",
 	    path, stream != NULL ? stream : "");
 	if (stream != NULL) {
 		errno = ENOENT;
@@ -968,7 +969,7 @@ gfvfs_stat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
 	fullpath = gfvfs_fullpath(handle, path);
 	e = gfs_stat_cached(fullpath, &st);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_stat", e);
+		gfvfs_error(GFARM_MSG_3000067, "gfs_stat", e);
 		errno = gfarm_error_to_errno(e);
 		return (-1);
 	}
@@ -986,7 +987,7 @@ gfvfs_fstat(vfs_handle_struct *handle, files_struct *fsp,
 	gfarm_error_t e;
 	const char *fullpath;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "fstat: fsp=%p, is_dir=%d",
+	gflog_debug(GFARM_MSG_3000068, "fstat: fsp=%p, is_dir=%d",
 	    fsp, fsp->is_directory);
 	if (!fsp->is_directory) {
 		msg = "gfs_pio_stat";
@@ -997,7 +998,7 @@ gfvfs_fstat(vfs_handle_struct *handle, files_struct *fsp,
 		    ((struct gfvfs_dir *)fsp->fh->gen_id)->dp, &st);
 	}
 	if (e != GFARM_ERR_NO_ERROR) {
-		gfvfs_error(GFARM_MSG_UNFIXED, msg, e);
+		gfvfs_error(GFARM_MSG_3000069, msg, e);
 		errno = gfarm_error_to_errno(e);
 		return (-1);
 	}
@@ -1015,7 +1016,7 @@ gfvfs_lstat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
 	const char *stream = smb_fname->stream_name;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "lstat: path=%s%s",
+	gflog_debug(GFARM_MSG_3000070, "lstat: path=%s%s",
 	    path, stream != NULL ? stream : "");
 	if (stream != NULL) {
 		errno = ENOENT;
@@ -1024,7 +1025,7 @@ gfvfs_lstat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
 	fullpath = gfvfs_fullpath(handle, path);
 	e = gfs_lstat_cached(fullpath, &st);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_lstat", e);
+		gfvfs_error(GFARM_MSG_3000071, "gfs_lstat", e);
 		errno = gfarm_error_to_errno(e);
 		return (-1);
 	}
@@ -1040,7 +1041,7 @@ gfvfs_get_alloc_size(struct vfs_handle_struct *handle,
 {
 	uint64_t result;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "get_alloc_size: fsp=%p, st_size %lld",
+	gflog_debug(GFARM_MSG_3000072, "get_alloc_size: fsp=%p, st_size %lld",
 	    fsp, (long long)sbuf->st_ex_size);
 	if (S_ISDIR(sbuf->st_ex_mode))
 		return (0);
@@ -1048,7 +1049,7 @@ gfvfs_get_alloc_size(struct vfs_handle_struct *handle,
 	if (fsp && fsp->initial_allocation_size)
 		result = MAX(result, fsp->initial_allocation_size);
 	result = smb_roundup(handle->conn, result);
-	gflog_debug(GFARM_MSG_UNFIXED, "get_alloc_size: result %lld",
+	gflog_debug(GFARM_MSG_3000073, "get_alloc_size: result %lld",
 	    (long long)result);
 	return (result);
 }
@@ -1061,7 +1062,7 @@ gfvfs_unlink(vfs_handle_struct *handle, const struct smb_filename *smb_fname)
 	gfarm_error_t e;
 	const char *fullpath;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "unlink: path=%s%s",
+	gflog_debug(GFARM_MSG_3000074, "unlink: path=%s%s",
 	    path, stream != NULL ? stream : "");
 	if (stream != NULL) {
 		errno = ENOENT;
@@ -1074,7 +1075,7 @@ gfvfs_unlink(vfs_handle_struct *handle, const struct smb_filename *smb_fname)
 		uncache_parent(fullpath);
 		return (0);
 	}
-	gflog_error(GFARM_MSG_UNFIXED, "gfs_unlink: %s",
+	gflog_error(GFARM_MSG_3000075, "gfs_unlink: %s",
 	    gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (-1);
@@ -1086,14 +1087,14 @@ gfvfs_chmod(vfs_handle_struct *handle, const char *path, mode_t mode)
 	gfarm_error_t e;
 	const char *fullpath;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "chmod: path=%s, mode=%o", path, mode);
+	gflog_debug(GFARM_MSG_3000076, "chmod: path=%s, mode=%o", path, mode);
 	fullpath = gfvfs_fullpath(handle, path);
 	e = gfs_chmod(fullpath, mode & GFARM_S_ALLPERM);
 	if (e == GFARM_ERR_NO_ERROR) {
 		gfs_stat_cache_purge(fullpath);
 		return (0);
 	}
-	gflog_error(GFARM_MSG_UNFIXED, "gfs_chmod: %s", gfarm_error_string(e));
+	gflog_error(GFARM_MSG_3000077, "gfs_chmod: %s", gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (-1);
 }
@@ -1101,7 +1102,7 @@ gfvfs_chmod(vfs_handle_struct *handle, const char *path, mode_t mode)
 static int
 gfvfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "fchmod(ENOSYS): fsp=%p, mode=%o",
+	gflog_debug(GFARM_MSG_3000078, "fchmod(ENOSYS): fsp=%p, mode=%o",
 	    fsp, mode);
 	errno = ENOSYS; /* XXX gfs_fchmod() */
 	return (-1);
@@ -1111,7 +1112,7 @@ static int
 gfvfs_chown(vfs_handle_struct *handle, const char *path,
 	uid_t uid, gid_t gid)
 {
-	gflog_debug(GFARM_MSG_UNFIXED,
+	gflog_debug(GFARM_MSG_3000079,
 	    "chown(ENOSYS): path=%s, uid=%d, gid=%d", path, uid, gid);
 	errno = ENOSYS;
 	return (-1);
@@ -1121,7 +1122,7 @@ static int
 gfvfs_fchown(vfs_handle_struct *handle, files_struct *fsp,
 	uid_t uid, gid_t gid)
 {
-	gflog_debug(GFARM_MSG_UNFIXED,
+	gflog_debug(GFARM_MSG_3000080,
 	    "fchown(ENOSYS): fsp=%p, uid=%d, gid=%d", fsp, uid, gid);
 	errno = ENOSYS;
 	return (-1);
@@ -1131,7 +1132,7 @@ static int
 gfvfs_lchown(vfs_handle_struct *handle, const char *path,
 	uid_t uid, gid_t gid)
 {
-	gflog_debug(GFARM_MSG_UNFIXED,
+	gflog_debug(GFARM_MSG_3000081,
 	    "lchown(ENOSYS): path=%s, uid=%d, gid=%d", path, uid, gid);
 	errno = ENOSYS;
 	return (-1);
@@ -1143,11 +1144,11 @@ gfvfs_chdir(vfs_handle_struct *handle, const char *path)
 	char *fullpath;
 	struct gfvfs_data *gdata = handle->data;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "chdir: path=%s, uid=%d/%d",
+	gflog_debug(GFARM_MSG_3000082, "chdir: path=%s, uid=%d/%d",
 	    path, getuid(), geteuid());
 	fullpath = strdup(gfvfs_fullpath(handle, path));
 	if (fullpath == NULL) {
-		gflog_error(GFARM_MSG_UNFIXED, "chdir: no memory");
+		gflog_error(GFARM_MSG_3000083, "chdir: no memory");
 		errno = ENOMEM;;
 		return (-1);
 	}
@@ -1161,7 +1162,7 @@ gfvfs_getwd(vfs_handle_struct *handle, char *buf)
 {
 	struct gfvfs_data *gdata = handle->data;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "getwd: cwd=%s", gdata->cwd);
+	gflog_debug(GFARM_MSG_3000084, "getwd: cwd=%s", gdata->cwd);
 	return (gdata->cwd);
 }
 
@@ -1173,7 +1174,7 @@ gfvfs_ntimes(vfs_handle_struct *handle, const struct smb_filename *smb_fname,
 	gfarm_error_t e;
 	const char *fullpath;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "ntimes: path=%s%s",
+	gflog_debug(GFARM_MSG_3000085, "ntimes: path=%s%s",
 	    smb_fname->base_name,
 	    smb_fname->stream_name != NULL ? smb_fname->stream_name : "");
 	if (smb_fname->stream_name != NULL) {
@@ -1211,7 +1212,7 @@ gfvfs_ntimes(vfs_handle_struct *handle, const struct smb_filename *smb_fname,
 		uncache_parent(fullpath);
 		return (0);
 	}
-	gflog_debug(GFARM_MSG_UNFIXED, "gfs_lutimes: %s: %s",
+	gflog_debug(GFARM_MSG_3000086, "gfs_lutimes: %s: %s",
 	    fullpath, gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (-1);
@@ -1222,7 +1223,7 @@ gfvfs_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T offset)
 {
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "ftruncate: fsp=%p, offset=%lld",
+	gflog_debug(GFARM_MSG_3000087, "ftruncate: fsp=%p, offset=%lld",
 	    fsp, (long long)offset);
 	e = gfs_pio_truncate((GFS_File)fsp->fh->gen_id, offset);
 	if (e == GFARM_ERR_NO_ERROR) {
@@ -1232,7 +1233,7 @@ gfvfs_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T offset)
 		gfs_stat_cache_purge(fullpath);
 		return (0);
 	}
-	gflog_error(GFARM_MSG_UNFIXED, "gfs_pio_truncate: %s",
+	gflog_error(GFARM_MSG_3000088, "gfs_pio_truncate: %s",
 	    gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (-1);
@@ -1242,7 +1243,7 @@ static int
 gfvfs_fallocate(vfs_handle_struct *handle, files_struct *fsp,
 	enum vfs_fallocate_mode mode, SMB_OFF_T offset, SMB_OFF_T len)
 {
-	gflog_debug(GFARM_MSG_UNFIXED,
+	gflog_debug(GFARM_MSG_3000089,
 	    "fallocate(ENOSYS): fsp=%p, off=%lld, len=%lld",
 	    fsp, (long long)offset, (long long)len);
 	errno = ENOSYS;
@@ -1253,7 +1254,7 @@ static bool
 gfvfs_lock(vfs_handle_struct *handle, files_struct *fsp, int op,
 	SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
-	gflog_debug(GFARM_MSG_UNFIXED,
+	gflog_debug(GFARM_MSG_3000090,
 	    "lock(ENOSYS): fsp=%p, op=%o, offset=%lld, count=%lld, type=%o",
 	    fsp, op, (long long)offset, (long long)count, type);
 	errno = ENOSYS;
@@ -1264,11 +1265,11 @@ static int
 gfvfs_kernel_flock(struct vfs_handle_struct *handle, struct files_struct *fsp,
 	uint32 share_mode, uint32 access_mask)
 {
-	gflog_debug(GFARM_MSG_UNFIXED,
+	gflog_debug(GFARM_MSG_3000091,
 	    "kernel_flock(ignored): fsp=%p, share_mode=%o, access_mask=%o",
 	    fsp, share_mode, access_mask);
 #if 0 /* should not be ENOSYS */
-	gflog_info(GFARM_MSG_UNFIXED, "kernel_flock: %s", strerror(ENOSYS));
+	gflog_info(GFARM_MSG_3000092, "kernel_flock: %s", strerror(ENOSYS));
 	errno = ENOSYS;
 	return (-1);
 #else
@@ -1280,7 +1281,7 @@ static int
 gfvfs_linux_setlease(struct vfs_handle_struct *handle,
 	struct files_struct *fsp, int leasetype)
 {
-	gflog_debug(GFARM_MSG_UNFIXED,
+	gflog_debug(GFARM_MSG_3000093,
 	    "linux_setlease(ENOSYS): fsp=%p, type=%o", fsp, leasetype);
 	errno = ENOSYS;
 	return (-1);
@@ -1290,7 +1291,7 @@ static bool
 gfvfs_getlock(vfs_handle_struct *handle, files_struct *fsp,
 	SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "getlock(ENOSYS): fsp=%p", fsp);
+	gflog_debug(GFARM_MSG_3000094, "getlock(ENOSYS): fsp=%p", fsp);
 #if 1
 	errno = ENOSYS;
 	return (false);
@@ -1307,7 +1308,7 @@ gfvfs_symlink(vfs_handle_struct *handle, const char *oldpath,
 	gfarm_error_t e;
 	const char *fullpath;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "symlink: old=%s, new=%s",
+	gflog_debug(GFARM_MSG_3000095, "symlink: old=%s, new=%s",
 	    oldpath, newpath);
 	fullpath = gfvfs_fullpath(handle, newpath);
 	e = gfs_symlink(oldpath, fullpath);
@@ -1315,7 +1316,7 @@ gfvfs_symlink(vfs_handle_struct *handle, const char *oldpath,
 		uncache_parent(fullpath);
 		return (0);
 	}
-	gflog_error(GFARM_MSG_UNFIXED, "gfs_symlink: %s",
+	gflog_error(GFARM_MSG_3000096, "gfs_symlink: %s",
 	    gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (-1);
@@ -1330,11 +1331,11 @@ gfvfs_vfs_readlink(vfs_handle_struct *handle, const char *path,
 	gfarm_error_t e;
 	const char *fullpath;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "readlink: path=%s", path);
+	gflog_debug(GFARM_MSG_3000097, "readlink: path=%s", path);
 	fullpath = gfvfs_fullpath(handle, path);
 	e = gfs_readlink(fullpath, &old);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gflog_error(GFARM_MSG_UNFIXED, "gfs_readlink: %s",
+		gflog_error(GFARM_MSG_3000098, "gfs_readlink: %s",
 		    gfarm_error_string(e));
 		errno = gfarm_error_to_errno(e);
 		return (-1);
@@ -1354,14 +1355,14 @@ gfvfs_link(vfs_handle_struct *handle, const char *oldpath, const char *newpath)
 	gfarm_error_t e;
 	char *fullold, *fullnew;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "link: old=%s, new=%s",
+	gflog_debug(GFARM_MSG_3000099, "link: old=%s, new=%s",
 	    oldpath, newpath);
 	fullold = strdup(gfvfs_fullpath(handle, oldpath));
 	fullnew = strdup(gfvfs_fullpath(handle, newpath));
 	if (fullold == NULL || fullnew == NULL) {
 		free(fullold);
 		free(fullnew);
-		gflog_error(GFARM_MSG_UNFIXED, "link: no memory");
+		gflog_error(GFARM_MSG_3000100, "link: no memory");
 		errno = ENOMEM;
 		return (-1);
 	}
@@ -1374,7 +1375,7 @@ gfvfs_link(vfs_handle_struct *handle, const char *oldpath, const char *newpath)
 	}
 	free(fullold);
 	free(fullnew);
-	gflog_error(GFARM_MSG_UNFIXED, "gfs_link: %s", gfarm_error_string(e));
+	gflog_error(GFARM_MSG_3000101, "gfs_link: %s", gfarm_error_string(e));
 	errno = gfarm_error_to_errno(e);
 	return (-1);
 }
@@ -1387,9 +1388,9 @@ gfvfs_mknod(vfs_handle_struct *handle, const char *path, mode_t mode,
 	gfarm_error_t e;
 	const char *fullpath;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "mknod: path=%s, mode=%o", path, mode);
+	gflog_debug(GFARM_MSG_3000102, "mknod: path=%s, mode=%o", path, mode);
 	if (!S_ISREG(mode)) {
-		gflog_error(GFARM_MSG_UNFIXED, "mknod: %s", strerror(ENOSYS));
+		gflog_error(GFARM_MSG_3000103, "mknod: %s", strerror(ENOSYS));
 		errno = ENOSYS;
 		return (-1);
 	}
@@ -1399,7 +1400,7 @@ gfvfs_mknod(vfs_handle_struct *handle, const char *path, mode_t mode,
 	if (e == GFARM_ERR_NO_ERROR)
 		e = gfs_pio_close(gf);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gflog_error(GFARM_MSG_UNFIXED, "gfs_pio_mknod: %s",
+		gflog_error(GFARM_MSG_3000104, "gfs_pio_mknod: %s",
 		    gfarm_error_string(e));
 		errno = gfarm_error_to_errno(e);
 		return (-1);
@@ -1439,7 +1440,7 @@ gfvfs_realpath(vfs_handle_struct *handle, const char *path)
 	char *rpath, *skip_path;
 	gfarm_error_t e;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "realpath: path=%s, uid=%d/%d",
+	gflog_debug(GFARM_MSG_3000105, "realpath: path=%s, uid=%d/%d",
 	    path, getuid(), geteuid());
 	fullpath = gfvfs_fullpath(handle, path);
 	e = gfs_realpath(fullpath, &rpath); /* slow? */
@@ -1447,15 +1448,15 @@ gfvfs_realpath(vfs_handle_struct *handle, const char *path)
 		skip_path = strdup(skip_prefix(rpath));
 		free(rpath);
 		if (skip_path != NULL) {
-			gflog_debug(GFARM_MSG_UNFIXED, "realpath: result=%s",
+			gflog_debug(GFARM_MSG_3000106, "realpath: result=%s",
 			    skip_path);
 		} else {
-			gflog_error(GFARM_MSG_UNFIXED, "realpath: no memory");
+			gflog_error(GFARM_MSG_3000107, "realpath: no memory");
 			errno = ENOMEM;
 		}
 		return (skip_path);
 	}
-	gfvfs_error(GFARM_MSG_UNFIXED, "realpath", e);
+	gfvfs_error(GFARM_MSG_3000108, "realpath", e);
 	errno = gfarm_error_to_errno(e);
 	return (NULL);
 }
@@ -1467,14 +1468,14 @@ gfvfs_notify_watch(struct vfs_handle_struct *handle,
 		struct notify_event *ev),
 	void *private_data, void *handle_p)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "notify_watch(ENOSYS)");
+	gflog_debug(GFARM_MSG_3000109, "notify_watch(ENOSYS)");
 	return (NT_STATUS_NOT_IMPLEMENTED);
 }
 
 static int
 gfvfs_chflags(vfs_handle_struct *handle, const char *path, uint flags)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "chflags(ENOSYS): path=%s, flags=%d",
+	gflog_debug(GFARM_MSG_3000110, "chflags(ENOSYS): path=%s, flags=%d",
 	    path, flags);
 	errno = ENOSYS;
 	return (-1);
@@ -1485,7 +1486,7 @@ gfvfs_file_id_create(vfs_handle_struct *handle, const SMB_STRUCT_STAT *sbuf)
 {
 	struct file_id id;
 
-	gflog_debug(GFARM_MSG_UNFIXED,
+	gflog_debug(GFARM_MSG_3000111,
 	    "file_id_create: st_dev=%lld, st_ino=%lld",
 	    (long long)sbuf->st_ex_dev, (long long)sbuf->st_ex_ino);
 	ZERO_STRUCT(id);
@@ -1500,7 +1501,7 @@ gfvfs_streaminfo(struct vfs_handle_struct *handle, struct files_struct *fsp,
 	const char *fname, TALLOC_CTX *mem_ctx, unsigned int *num_streams,
 	struct stream_struct **streams)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "streaminfo(VFS_NEXT): fsp=%p, path=%s",
+	gflog_debug(GFARM_MSG_3000112, "streaminfo(VFS_NEXT): fsp=%p, path=%s",
 	    fsp, fname);
 	return (SMB_VFS_NEXT_STREAMINFO(handle, fsp, fname, mem_ctx,
 	    num_streams, streams));
@@ -1514,7 +1515,7 @@ gfvfs_get_real_filename(
 	TALLOC_CTX *mem_ctx,
 	char **found_name)
 {
-	gflog_debug(GFARM_MSG_UNFIXED,
+	gflog_debug(GFARM_MSG_3000113,
 	    "get_real_filename(EOPNOTSUPP): path=%s, name=%s", path, name);
 	errno = EOPNOTSUPP; /* should not be ENOSYS */
 	return (-1);
@@ -1525,7 +1526,7 @@ gfvfs_connectpath(struct vfs_handle_struct *handle, const char *filename)
 {
 	const char *result = SMB_VFS_NEXT_CONNECTPATH(handle, filename);
 
-	gflog_debug(GFARM_MSG_UNFIXED,
+	gflog_debug(GFARM_MSG_3000114,
 	    "connectpath(VFS_NEXT): path=%s, result=%s",
 	    filename, result);
 	return (result);
@@ -1539,7 +1540,7 @@ gfvfs_brl_lock_windows(
 	bool blocking_lock,
 	struct blocking_lock_record *blr)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "brl_lock_windows(VFS_NEXT): fsp=%p",
+	gflog_debug(GFARM_MSG_3000115, "brl_lock_windows(VFS_NEXT): fsp=%p",
 	    br_lck->fsp);
 	return (SMB_VFS_NEXT_BRL_LOCK_WINDOWS(handle, br_lck, plock,
 	    blocking_lock, blr));
@@ -1552,7 +1553,7 @@ gfvfs_brl_unlock_windows(
 	struct byte_range_lock *br_lck,
 	const struct lock_struct *plock)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "brl_unlock_windows(VFS_NEXT): fsp=%p",
+	gflog_debug(GFARM_MSG_3000116, "brl_unlock_windows(VFS_NEXT): fsp=%p",
 	    br_lck->fsp);
 	return (SMB_VFS_NEXT_BRL_UNLOCK_WINDOWS(handle, msg_ctx,
 	    br_lck, plock));
@@ -1565,7 +1566,7 @@ gfvfs_brl_cancel_windows(
 	struct lock_struct *plock,
 	struct blocking_lock_record *blr)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "brl_cancel_windows(VFS_NEXT): fsp=%p",
+	gflog_debug(GFARM_MSG_3000117, "brl_cancel_windows(VFS_NEXT): fsp=%p",
 	    br_lck->fsp);
 	return (SMB_VFS_NEXT_BRL_CANCEL_WINDOWS(handle, br_lck, plock, blr));
 }
@@ -1576,7 +1577,7 @@ gfvfs_strict_lock(
 	struct files_struct *fsp,
 	struct lock_struct *plock)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "strict_lock(VFS_NEXT): fsp=%p", fsp);
+	gflog_debug(GFARM_MSG_3000118, "strict_lock(VFS_NEXT): fsp=%p", fsp);
 	/* should not be ENOSYS */
 	return (SMB_VFS_NEXT_STRICT_LOCK(handle, fsp, plock));
 }
@@ -1587,7 +1588,7 @@ gfvfs_strict_unlock(
 	struct files_struct *fsp,
 	struct lock_struct *plock)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "strict_unlock(VFS_NEXT): fsp=%p", fsp);
+	gflog_debug(GFARM_MSG_3000119, "strict_unlock(VFS_NEXT): fsp=%p", fsp);
 	SMB_VFS_NEXT_STRICT_UNLOCK(handle, fsp, plock);
 }
 
@@ -1599,7 +1600,7 @@ gfvfs_translate_name(
 	TALLOC_CTX *mem_ctx,
 	char **pmapped_name)
 {
-	gflog_debug(GFARM_MSG_UNFIXED,
+	gflog_debug(GFARM_MSG_3000120,
 	    "translate_name(none mapped): name=%s", mapped_name);
 	/* should not be NT_STATUS_NOT_IMPLEMENTED */
 	return (NT_STATUS_NONE_MAPPED);
@@ -1609,7 +1610,7 @@ static NTSTATUS
 gfvfs_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	uint32 security_info, struct security_descriptor **ppdesc)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "fget_nt_acl(VFS_NEXT): fsp=%p", fsp);
+	gflog_debug(GFARM_MSG_3000121, "fget_nt_acl(VFS_NEXT): fsp=%p", fsp);
 	return (SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info, ppdesc));
 }
 
@@ -1617,7 +1618,7 @@ static NTSTATUS
 gfvfs_get_nt_acl(vfs_handle_struct *handle, const char *name,
 	uint32 security_info, struct security_descriptor **ppdesc)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "get_nt_acl(VFS_NEXT): path=%s", name);
+	gflog_debug(GFARM_MSG_3000122, "get_nt_acl(VFS_NEXT): path=%s", name);
 	return (SMB_VFS_NEXT_GET_NT_ACL(handle, name, security_info, ppdesc));
 }
 
@@ -1625,14 +1626,14 @@ static NTSTATUS
 gfvfs_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	uint32 si_sent, const struct security_descriptor *psd)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "fset_nt_acl(VFS_NEXT): fsp=%p", fsp);
+	gflog_debug(GFARM_MSG_3000123, "fset_nt_acl(VFS_NEXT): fsp=%p", fsp);
 	return (SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, si_sent, psd));
 }
 
 static int
 gfvfs_chmod_acl(vfs_handle_struct *handle, const char *path, mode_t mode)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "chmod_acl: path=%s, mode=%o",
+	gflog_debug(GFARM_MSG_3000124, "chmod_acl: path=%s, mode=%o",
 	    path, mode);
 	return (gfvfs_chmod(handle, path, mode));
 }
@@ -1640,7 +1641,7 @@ gfvfs_chmod_acl(vfs_handle_struct *handle, const char *path, mode_t mode)
 static int
 gfvfs_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "fchmod_acl: fsp=%p, mode=%o",
+	gflog_debug(GFARM_MSG_3000125, "fchmod_acl: fsp=%p, mode=%o",
 	    fsp, mode);
 	return (gfvfs_fchmod(handle, fsp, mode));
 }
@@ -1652,16 +1653,16 @@ smb_acl_type_to_gfarm_acl_type(const char *path, const char *diag,
 	switch (s_type) {
 	case SMB_ACL_TYPE_ACCESS:
 		*g_typep = GFARM_ACL_TYPE_ACCESS;
-		gflog_debug(GFARM_MSG_UNFIXED,
+		gflog_debug(GFARM_MSG_3000126,
 		    "%s[access]: path=%s", diag, path);
 		return (1);
 	case SMB_ACL_TYPE_DEFAULT:
 		*g_typep = GFARM_ACL_TYPE_DEFAULT;
-		gflog_debug(GFARM_MSG_UNFIXED,
+		gflog_debug(GFARM_MSG_3000127,
 		    "%s[default]: path=%s", diag, path);
 		return (1);
 	default:
-		gflog_debug(GFARM_MSG_UNFIXED,
+		gflog_debug(GFARM_MSG_3000128,
 		    "%s[EINVAL]: path=%s", diag, path);
 		return (0);
 	}
@@ -1690,7 +1691,7 @@ gfvfs_sys_acl_get_file(vfs_handle_struct *handle, const char *path,
 
 		e = gfs_lstat_cached(fullpath, &st);
 		if (e != GFARM_ERR_NO_ERROR) {
-			gflog_error(GFARM_MSG_UNFIXED, "gfs_lstat: %s: %s",
+			gflog_error(GFARM_MSG_3000129, "gfs_lstat: %s: %s",
 			    fullpath, gfarm_error_string(e));
 			errno = gfarm_error_to_errno(e);
 			return (NULL);
@@ -1700,13 +1701,13 @@ gfvfs_sys_acl_get_file(vfs_handle_struct *handle, const char *path,
 	}
 	if (e != GFARM_ERR_NO_ERROR) {
 		if (e == GFARM_ERR_NO_SUCH_OBJECT)
-			gflog_debug(GFARM_MSG_UNFIXED,
+			gflog_debug(GFARM_MSG_3000130,
 			    "gfs_acl_get_file_cached[%s]: %s: %s",
 			    g_type == GFARM_ACL_TYPE_ACCESS ?
 			    "access" : "default",
 			    fullpath, gfarm_error_string(e));
 		else
-			gflog_error(GFARM_MSG_UNFIXED,
+			gflog_error(GFARM_MSG_3000131,
 			    "gfs_acl_get_file_cached[%s]: %s: %s",
 			    g_type == GFARM_ACL_TYPE_ACCESS ?
 			    "access" : "default",
@@ -1724,7 +1725,7 @@ gfvfs_sys_acl_get_file(vfs_handle_struct *handle, const char *path,
 static SMB_ACL_T
 gfvfs_sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_get_fd(ENOSYS): fsp=%p", fsp);
+	gflog_debug(GFARM_MSG_3000132, "sys_acl_get_fd(ENOSYS): fsp=%p", fsp);
 	errno = ENOSYS; /* XXX gfs_acl_get_fh() */
 	return (NULL);
 }
@@ -1751,7 +1752,7 @@ gfvfs_sys_acl_set_file(vfs_handle_struct *handle, const char *path,
 	e = gfs_acl_set_file(fullpath, g_type, g_acl);
 	gfs_acl_free(g_acl);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gflog_error(GFARM_MSG_UNFIXED, "gfs_acl_set_file: %s",
+		gflog_error(GFARM_MSG_3000133, "gfs_acl_set_file: %s",
 		    gfarm_error_string(e));
 		errno = gfarm_error_to_errno(e);
 		return (-1);
@@ -1765,7 +1766,7 @@ static int
 gfvfs_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
 	SMB_ACL_T theacl)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_set_fd(ENOSYS): fsp=%p", fsp);
+	gflog_debug(GFARM_MSG_3000134, "sys_acl_set_fd(ENOSYS): fsp=%p", fsp);
 	errno = ENOSYS; /* XXX gfs_acl_set_fh() */
 	return (-1);
 }
@@ -1776,12 +1777,12 @@ gfvfs_sys_acl_delete_def_file(vfs_handle_struct *handle,  const char *path)
 	gfarm_error_t e;
 	const char *fullpath;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_delete_def_file: path=%s",
+	gflog_debug(GFARM_MSG_3000135, "sys_acl_delete_def_file: path=%s",
 	    path);
 	fullpath = gfvfs_fullpath(handle, path);
 	e = gfs_acl_delete_def_file(fullpath);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gflog_error(GFARM_MSG_UNFIXED, "gfs_acl_delete_def_file: %s",
+		gflog_error(GFARM_MSG_3000136, "gfs_acl_delete_def_file: %s",
 		    gfarm_error_string(e));
 		errno = gfarm_error_to_errno(e);
 		return (-1);
@@ -1796,7 +1797,7 @@ static int
 gfvfs_sys_acl_get_entry(vfs_handle_struct *handle, SMB_ACL_T theacl,
 	int entry_id, SMB_ACL_ENTRY_T *entry_p)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_get_entry(ENOSYS)");
+	gflog_debug(GFARM_MSG_3000137, "sys_acl_get_entry(ENOSYS)");
 	errno = ENOSYS;
 	return (-1);
 }
@@ -1805,7 +1806,7 @@ static int
 gfvfs_sys_acl_get_tag_type(vfs_handle_struct *handle, SMB_ACL_ENTRY_T entry_d,
 	SMB_ACL_TAG_T *tag_type_p)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_get_tag_type(ENOSYS)");
+	gflog_debug(GFARM_MSG_3000138, "sys_acl_get_tag_type(ENOSYS)");
 	errno = ENOSYS;
 	return (-1);
 }
@@ -1814,7 +1815,7 @@ static int
 gfvfs_sys_acl_get_permset(vfs_handle_struct *handle, SMB_ACL_ENTRY_T entry_d,
 	SMB_ACL_PERMSET_T *permset_p)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_get_permset(ENOSYS)");
+	gflog_debug(GFARM_MSG_3000139, "sys_acl_get_permset(ENOSYS)");
 	errno = ENOSYS;
 	return (-1);
 }
@@ -1823,7 +1824,7 @@ static void *
 gfvfs_sys_acl_get_qualifier(vfs_handle_struct *handle,
 	SMB_ACL_ENTRY_T entry_d)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_get_qualifier(ENOSYS)");
+	gflog_debug(GFARM_MSG_3000140, "sys_acl_get_qualifier(ENOSYS)");
 	errno = ENOSYS;
 	return (NULL);
 }
@@ -1831,7 +1832,7 @@ gfvfs_sys_acl_get_qualifier(vfs_handle_struct *handle,
 static int
 gfvfs_sys_acl_clear_perms(vfs_handle_struct *handle,  SMB_ACL_PERMSET_T permset)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_clear_perms(ENOSYS)");
+	gflog_debug(GFARM_MSG_3000141, "sys_acl_clear_perms(ENOSYS)");
 	errno = ENOSYS;
 	return (-1);
 }
@@ -1840,7 +1841,7 @@ static int
 gfvfs_sys_acl_add_perm(vfs_handle_struct *handle, SMB_ACL_PERMSET_T permset,
 	SMB_ACL_PERM_T perm)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_add_perm(ENOSYS)");
+	gflog_debug(GFARM_MSG_3000142, "sys_acl_add_perm(ENOSYS)");
 	errno = ENOSYS;
 	return (-1);
 }
@@ -1849,7 +1850,7 @@ static char *
 gfvfs_sys_acl_to_text(vfs_handle_struct *handle, SMB_ACL_T theacl,
 	ssize_t *plen)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_to_text(ENOSYS)");
+	gflog_debug(GFARM_MSG_3000143, "sys_acl_to_text(ENOSYS)");
 	errno = ENOSYS;
 	return (NULL);
 }
@@ -1857,7 +1858,7 @@ gfvfs_sys_acl_to_text(vfs_handle_struct *handle, SMB_ACL_T theacl,
 static SMB_ACL_T
 gfvfs_sys_acl_init(vfs_handle_struct *handle, int count)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_init(ENOSYS): count %d",
+	gflog_debug(GFARM_MSG_3000144, "sys_acl_init(ENOSYS): count %d",
 	    count);
 	errno = ENOSYS;
 	return (NULL);
@@ -1867,7 +1868,7 @@ static int
 gfvfs_sys_acl_create_entry(vfs_handle_struct *handle, SMB_ACL_T *pacl,
 	SMB_ACL_ENTRY_T *pentry)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_create_entry(ENOSYS)");
+	gflog_debug(GFARM_MSG_3000145, "sys_acl_create_entry(ENOSYS)");
 	errno = ENOSYS;
 	return (-1);
 }
@@ -1876,7 +1877,7 @@ static int
 gfvfs_sys_acl_set_tag_type(vfs_handle_struct *handle, SMB_ACL_ENTRY_T entry,
 	SMB_ACL_TAG_T tagtype)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_set_tag_type(ENOSYS)");
+	gflog_debug(GFARM_MSG_3000146, "sys_acl_set_tag_type(ENOSYS)");
 	errno = ENOSYS;
 	return (-1);
 }
@@ -1885,7 +1886,7 @@ static int
 gfvfs_sys_acl_set_qualifier(vfs_handle_struct *handle, SMB_ACL_ENTRY_T entry,
 	void *qual)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_set_qualifier(ENOSYS)");
+	gflog_debug(GFARM_MSG_3000147, "sys_acl_set_qualifier(ENOSYS)");
 	errno = ENOSYS;
 	return (-1);
 }
@@ -1894,7 +1895,7 @@ static int
 gfvfs_sys_acl_set_permset(vfs_handle_struct *handle, SMB_ACL_ENTRY_T entry,
 	SMB_ACL_PERMSET_T permset)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_set_permset(ENOSYS)");
+	gflog_debug(GFARM_MSG_3000148, "sys_acl_set_permset(ENOSYS)");
 	errno = ENOSYS;
 	return (-1);
 }
@@ -1902,7 +1903,7 @@ gfvfs_sys_acl_set_permset(vfs_handle_struct *handle, SMB_ACL_ENTRY_T entry,
 static int
 gfvfs_sys_acl_valid(vfs_handle_struct *handle, SMB_ACL_T theacl)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_valid(ENOSYS)");
+	gflog_debug(GFARM_MSG_3000149, "sys_acl_valid(ENOSYS)");
 	errno = ENOSYS;
 	return (-1);
 }
@@ -1911,7 +1912,7 @@ static int
 gfvfs_sys_acl_get_perm(vfs_handle_struct *handle, SMB_ACL_PERMSET_T permset,
 	SMB_ACL_PERM_T perm)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_get_perm(ENOSYS)");
+	gflog_debug(GFARM_MSG_3000150, "sys_acl_get_perm(ENOSYS)");
 	errno = ENOSYS;
 	return (-1);
 }
@@ -1919,7 +1920,7 @@ gfvfs_sys_acl_get_perm(vfs_handle_struct *handle, SMB_ACL_PERMSET_T permset,
 static int
 gfvfs_sys_acl_free_text(vfs_handle_struct *handle, char *text)
 {
-	gflog_debug(GFARM_MSG_UNFIXED,
+	gflog_debug(GFARM_MSG_3000151,
 	    "sys_acl_free_text(ENOSYS): text %s", text);
 	errno = ENOSYS;
 	return (-1);
@@ -1928,7 +1929,7 @@ gfvfs_sys_acl_free_text(vfs_handle_struct *handle, char *text)
 static int
 gfvfs_sys_acl_free_acl(vfs_handle_struct *handle, SMB_ACL_T posix_acl)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_free_acl");
+	gflog_debug(GFARM_MSG_3000152, "sys_acl_free_acl");
 	SAFE_FREE(posix_acl);
 	return (0);
 }
@@ -1937,7 +1938,7 @@ static int
 gfvfs_sys_acl_free_qualifier(vfs_handle_struct *handle, void *qualifier,
 	SMB_ACL_TAG_T tagtype)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "sys_acl_free_qualifier(ENOSYS)");
+	gflog_debug(GFARM_MSG_3000153, "sys_acl_free_qualifier(ENOSYS)");
 	errno = ENOSYS;
 	return (-1);
 }
@@ -1960,12 +1961,12 @@ gfvfs_getxattr(vfs_handle_struct *handle, const char *path,
 	size_t s = size;
 	const char *fullpath;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "getxattr: path=%s, name=%s, size=%d",
+	gflog_debug(GFARM_MSG_3000154, "getxattr: path=%s, name=%s, size=%d",
 	    path, name, (int)size);
 	fullpath = gfvfs_fullpath(handle, path);
 	e = gfs_getxattr_cached(fullpath, name, value, &s);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_getxattr_cached", e);
+		gfvfs_error(GFARM_MSG_3000155, "gfs_getxattr_cached", e);
 		errno = gfarm_error_to_errno_for_xattr(e);
 		return (-1);
 	}
@@ -1980,12 +1981,12 @@ gfvfs_lgetxattr(vfs_handle_struct *handle, const char *path,
 	size_t s = size;
 	const char *fullpath;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "lgetxattr: path=%s, name=%s",
+	gflog_debug(GFARM_MSG_3000156, "lgetxattr: path=%s, name=%s",
 	    path, name);
 	fullpath = gfvfs_fullpath(handle, path);
 	e = gfs_lgetxattr_cached(fullpath, name, value, &s);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_lgetxattr_cached", e);
+		gfvfs_error(GFARM_MSG_3000157, "gfs_lgetxattr_cached", e);
 		errno = gfarm_error_to_errno_for_xattr(e);
 		return (-1);
 	}
@@ -1999,11 +2000,11 @@ gfvfs_fgetxattr(vfs_handle_struct *handle,
 	gfarm_error_t e;
 	size_t s = size;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "fgetxattr: fsp=%p, name=%s, size=%d",
+	gflog_debug(GFARM_MSG_3000158, "fgetxattr: fsp=%p, name=%s, size=%d",
 	    fsp, name, (int)size);
 	e = gfs_fgetxattr((GFS_File)fsp->fh->gen_id, name, value, &s);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_fgetxattr", e);
+		gfvfs_error(GFARM_MSG_3000159, "gfs_fgetxattr", e);
 		errno = gfarm_error_to_errno_for_xattr(e);
 		return (-1);
 	}
@@ -2018,12 +2019,12 @@ gfvfs_listxattr(vfs_handle_struct *handle, const char *path,
 	size_t s = size;
 	const char *fullpath;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "listxattr: path=%s, size=%d",
+	gflog_debug(GFARM_MSG_3000160, "listxattr: path=%s, size=%d",
 	    path, (int)size);
 	fullpath = gfvfs_fullpath(handle, path);
 	e = gfs_listxattr(fullpath, list, &s);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_listxattr", e);
+		gfvfs_error(GFARM_MSG_3000161, "gfs_listxattr", e);
 		errno = gfarm_error_to_errno(e);
 		return (-1);
 	}
@@ -2038,12 +2039,12 @@ gfvfs_llistxattr(vfs_handle_struct *handle, const char *path,
 	size_t s = size;
 	const char *fullpath;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "llistxattr: path=%s, size=%d",
+	gflog_debug(GFARM_MSG_3000162, "llistxattr: path=%s, size=%d",
 	    path, (int)size);
 	fullpath = gfvfs_fullpath(handle, path);
 	e = gfs_llistxattr(fullpath, list, &s);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_llistxattr", e);
+		gfvfs_error(GFARM_MSG_3000163, "gfs_llistxattr", e);
 		errno = gfarm_error_to_errno(e);
 		return (-1);
 	}
@@ -2058,13 +2059,13 @@ gfvfs_flistxattr(vfs_handle_struct *handle,
 	size_t s = size;
 	const char *fullpath;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "flistxattr: fsp=%p, size=%d",
+	gflog_debug(GFARM_MSG_3000164, "flistxattr: fsp=%p, size=%d",
 	    fsp, (int)size);
 	/* XXX gfs_flistxattr() */
 	fullpath = gfvfs_fullpath(handle, fsp->fsp_name->base_name);
 	e = gfs_llistxattr(fullpath, list, &s);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_llistxattr", e);
+		gfvfs_error(GFARM_MSG_3000165, "gfs_llistxattr", e);
 		errno = gfarm_error_to_errno(e);
 		return (-1);
 	}
@@ -2078,12 +2079,12 @@ gfvfs_removexattr(vfs_handle_struct *handle, const char *path,
 	gfarm_error_t e;
 	const char *fullpath;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "removexattr: path=%s, name=%s",
+	gflog_debug(GFARM_MSG_3000166, "removexattr: path=%s, name=%s",
 	    path, name);
 	fullpath = gfvfs_fullpath(handle, path);
 	e = gfs_removexattr(fullpath, name);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_removexattr", e);
+		gfvfs_error(GFARM_MSG_3000167, "gfs_removexattr", e);
 		errno = gfarm_error_to_errno_for_xattr(e);
 		return (-1);
 	}
@@ -2099,12 +2100,12 @@ gfvfs_lremovexattr(vfs_handle_struct *handle, const char *path,
 	gfarm_error_t e;
 	const char *fullpath;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "lremovexattr: path=%s, name=%s",
+	gflog_debug(GFARM_MSG_3000168, "lremovexattr: path=%s, name=%s",
 	    path, name);
 	fullpath = gfvfs_fullpath(handle, path);
 	e = gfs_lremovexattr(fullpath, name);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_lremovexattr", e);
+		gfvfs_error(GFARM_MSG_3000169, "gfs_lremovexattr", e);
 		errno = gfarm_error_to_errno_for_xattr(e);
 		return (-1);
 	}
@@ -2120,11 +2121,11 @@ gfvfs_fremovexattr(vfs_handle_struct *handle,
 	gfarm_error_t e;
 	const char *fullpath;
 
-	gflog_debug(GFARM_MSG_UNFIXED, "fremovexattr: fsp=%p, name=%s",
+	gflog_debug(GFARM_MSG_3000170, "fremovexattr: fsp=%p, name=%s",
 	    fsp, name);
 	e = gfs_fremovexattr((GFS_File)fsp->fh->gen_id, name);
 	if (e != GFARM_ERR_NO_ERROR) {
-		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_fremovexattr", e);
+		gfvfs_error(GFARM_MSG_3000171, "gfs_fremovexattr", e);
 		errno = gfarm_error_to_errno_for_xattr(e);
 		return (-1);
 	}
@@ -2160,14 +2161,14 @@ gfvfs_setxattr(vfs_handle_struct *handle, const char *path,
 	gfarm_error_t e;
 	const char *fullpath;
 
-	gflog_debug(GFARM_MSG_UNFIXED,
+	gflog_debug(GFARM_MSG_3000172,
 	    "setxattr: path=%s, name=%s, size=%d, flags=%d",
 	    path, name, (int)size, flags);
 	fullpath = gfvfs_fullpath(handle, path);
 	e = gfs_setxattr(fullpath, name, value, size,
 	    xattr_flags_to_gfarm(flags));
 	if (e != GFARM_ERR_NO_ERROR) {
-		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_setxattr", e);
+		gfvfs_error(GFARM_MSG_3000173, "gfs_setxattr", e);
 		errno = gfarm_error_to_errno_for_xattr(e);
 		return (-1);
 	}
@@ -2183,14 +2184,14 @@ gfvfs_lsetxattr(vfs_handle_struct *handle, const char *path,
 	gfarm_error_t e;
 	const char *fullpath;
 
-	gflog_debug(GFARM_MSG_UNFIXED,
+	gflog_debug(GFARM_MSG_3000174,
 	    "lsetxattr: path=%s, name=%s, size=%d, flags=%d",
 	    path, name, (int)size, flags);
 	fullpath = gfvfs_fullpath(handle, path);
 	e = gfs_lsetxattr(fullpath, name, value, size,
 	    xattr_flags_to_gfarm(flags));
 	if (e != GFARM_ERR_NO_ERROR) {
-		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_lsetxattr", e);
+		gfvfs_error(GFARM_MSG_3000175, "gfs_lsetxattr", e);
 		errno = gfarm_error_to_errno_for_xattr(e);
 		return (-1);
 	}
@@ -2206,13 +2207,13 @@ gfvfs_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp,
 	gfarm_error_t e;
 	const char *fullpath;
 
-	gflog_debug(GFARM_MSG_UNFIXED,
+	gflog_debug(GFARM_MSG_3000176,
 	    "fsetxattr: fsp=%p, name=%s, size=%d, flags=%d",
 	    fsp, name, (int)size, flags);
 	e = gfs_fsetxattr((GFS_File)fsp->fh->gen_id, name, value, size,
 	    xattr_flags_to_gfarm(flags));
 	if (e != GFARM_ERR_NO_ERROR) {
-		gfvfs_error(GFARM_MSG_UNFIXED, "gfs_fsetxattr", e);
+		gfvfs_error(GFARM_MSG_3000177, "gfs_fsetxattr", e);
 		errno = gfarm_error_to_errno_for_xattr(e);
 		return (-1);
 	}
@@ -2226,7 +2227,7 @@ static int
 gfvfs_aio_read(struct vfs_handle_struct *handle, struct files_struct *fsp,
 	SMB_STRUCT_AIOCB *aiocb)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "aio_read(ENOSYS): fsp=%p", fsp);
+	gflog_debug(GFARM_MSG_3000178, "aio_read(ENOSYS): fsp=%p", fsp);
 	errno = ENOSYS;
 	return (-1);
 }
@@ -2235,7 +2236,7 @@ static int
 gfvfs_aio_write(struct vfs_handle_struct *handle, struct files_struct *fsp,
 	SMB_STRUCT_AIOCB *aiocb)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "aio_write(ENOSYS): fsp=%p", fsp);
+	gflog_debug(GFARM_MSG_3000179, "aio_write(ENOSYS): fsp=%p", fsp);
 	errno = ENOSYS;
 	return (-1);
 }
@@ -2244,7 +2245,7 @@ static ssize_t
 gfvfs_aio_return_fn(struct vfs_handle_struct *handle,
 	struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "aio_return_fn(ENOSYS): fsp=%p", fsp);
+	gflog_debug(GFARM_MSG_3000180, "aio_return_fn(ENOSYS): fsp=%p", fsp);
 	errno = ENOSYS;
 	return (-1);
 }
@@ -2253,7 +2254,7 @@ static int
 gfvfs_aio_cancel(struct vfs_handle_struct *handle,
 	struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "aio_cancel(ENOSYS): fsp=%p", fsp);
+	gflog_debug(GFARM_MSG_3000181, "aio_cancel(ENOSYS): fsp=%p", fsp);
 	errno = ENOSYS;
 	return (-1);
 }
@@ -2262,7 +2263,7 @@ static int
 gfvfs_aio_error_fn(struct vfs_handle_struct *handle,
 	struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "aio_error_fn(ENOSYS): fsp=%p", fsp);
+	gflog_debug(GFARM_MSG_3000182, "aio_error_fn(ENOSYS): fsp=%p", fsp);
 	errno = ENOSYS;
 	return (-1);
 }
@@ -2271,7 +2272,7 @@ static int
 gfvfs_aio_fsync(struct vfs_handle_struct *handle, struct files_struct *fsp,
 	int op, SMB_STRUCT_AIOCB *aiocb)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "aio_fsync(ENOSYS): fsp=%p, op=%d",
+	gflog_debug(GFARM_MSG_3000183, "aio_fsync(ENOSYS): fsp=%p, op=%d",
 	    fsp, op);
 	errno = ENOSYS;
 	return (-1);
@@ -2282,7 +2283,7 @@ gfvfs_aio_suspend(struct vfs_handle_struct *handle, struct files_struct *fsp,
 	const SMB_STRUCT_AIOCB * const aiocb[], int n,
 	const struct timespec *ts)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "aio_suspend(ENOSYS): fsp=%p, n_cb=%d",
+	gflog_debug(GFARM_MSG_3000184, "aio_suspend(ENOSYS): fsp=%p, n_cb=%d",
 	    fsp, n);
 	errno = ENOSYS;
 	return (-1);
@@ -2291,7 +2292,7 @@ gfvfs_aio_suspend(struct vfs_handle_struct *handle, struct files_struct *fsp,
 static bool
 gfvfs_aio_force(struct vfs_handle_struct *handle, struct files_struct *fsp)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "aio_force(ENOSYS): fsp=%p", fsp);
+	gflog_debug(GFARM_MSG_3000185, "aio_force(ENOSYS): fsp=%p", fsp);
 	errno = ENOSYS;
 	return (false);
 }
@@ -2300,7 +2301,7 @@ static bool
 gfvfs_is_offline(struct vfs_handle_struct *handle,
 	const struct smb_filename *fname, SMB_STRUCT_STAT *sbuf)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "is_offline(ENOSYS): path=%s%s",
+	gflog_debug(GFARM_MSG_3000186, "is_offline(ENOSYS): path=%s%s",
 	    fname->base_name,
 	    fname->stream_name != NULL ? fname->stream_name : "");
 	errno = ENOSYS;
@@ -2311,7 +2312,7 @@ static int
 gfvfs_set_offline(struct vfs_handle_struct *handle,
 	const struct smb_filename *fname)
 {
-	gflog_debug(GFARM_MSG_UNFIXED, "set_offline(ENOSYS): path=%s%s",
+	gflog_debug(GFARM_MSG_3000187, "set_offline(ENOSYS): path=%s%s",
 	    fname->base_name,
 	    fname->stream_name != NULL ? fname->stream_name : "");
 	errno = ENOSYS;

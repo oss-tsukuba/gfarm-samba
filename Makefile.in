@@ -725,6 +725,8 @@ uninstall-am: uninstall-nobase_libLTLIBRARIES
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags uninstall uninstall-am uninstall-nobase_libLTLIBRARIES
 
+
+.PHONY: msgno
 msgno:
 	GFARM_TOPDIR=$(top_srcdir) $(ASSIGNMSGNO) $(vfs_gfarm_la_SOURCES)
 

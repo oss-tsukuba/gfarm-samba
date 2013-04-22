@@ -7,5 +7,7 @@ EXTRA_DIST = README
 
 # gflog message number assignment
 ASSIGNMSGNO=$(top_srcdir)/msgno/assign_msgno.pl
+
+.PHONY: msgno
 msgno:
 	GFARM_TOPDIR=$(top_srcdir) $(ASSIGNMSGNO) $(vfs_gfarm_la_SOURCES)

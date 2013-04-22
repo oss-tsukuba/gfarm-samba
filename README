@@ -16,45 +16,50 @@ This module is tested using:
 How to Install
 ==============
 
-Before building this VFS module, you need to get source code of
-Samba-3.6.x and install gfarm-devel package.
+Before building this VFS module, you need to set up Samba
+servers.  The VFS module build requires source code of
+Samba-3.6.x and gfarm-devel package.
 
-- Installation of Samba-3.6.x
+- Set up Samba servers
 
-From Samba source package:
+Set up Samba servers by either source tree or binary package.
+
+* From Samba source package
+
 $ cd samba-3.6.x/source3
 $ ./configure
 $ make
 # make install
 
-You should set up to start smbd automatically.
-For more information, see manual page of Samba.
+In this case, you need to prepare start up script of
+smbd by yourself.  For more information, see manual page
+of Samba.
 
-From binary package (Examples):
-Ubuntu 12.04:
+* From binary package
+
+In case of Ubuntu 12.04
 $ sudo apt-get install samba
 
-CentOS 5.x:
+In case of CentOS 5.x
 # yum install samba3x
 
-Gfarm Samba module does not work in the environment except Samba 3.6.x.
-(CentOS 6.x does not have Samba 3.6.x RPM package officially.)
+Note that Gfarm Samba module is fully tested with Samba 3.6.x.
+Use Samba 3.6.x binary package.
 
 - Installation and Setup of Gfarm
 
 - Preparation of Samba-3.6.x header files
 
 Execute "configure.developer" script in the Samba source directory,
-and, execute only "make".  "make install" is not necessary at this
-time.
+and, execute "make".  "make install" is not necessary at this time.
 
 $ cd samba-3.6.x/source3		# SAMBA_SOURCE_DIRECTORY
 $ ./configure.developer
 $ make
 
-- User configuration
+- User account management
 
-See Samba manuals. (ex. pdbedit)
+It can be done by pdbedit.  See Samba manuals.
 
 - Compilation and installation of the Gfarm Samba VFS module
 
@@ -67,12 +72,8 @@ $ make
 # sudo make install
 
 "make install" installs the Gfarm module in SAMBA_LIBRARY_DIRECTORY/vfs.
-
-On General OS:
-  --libdir=/usr/lib/samba => /usr/lib/samba/vfs/gfarm.so
-
-On x86_64 RHEL (or CentOS):
-  --libdir=/usr/lib64/samba => /usr/lib64/samba/vfs/gfarm.so
+SAMBA_LIBRARY_DIRECTORY depends on the package and OS.  It typically
+be /usr/lib/samba in 32bit OS, and /usr/lib64/samba in 64bit OS.
 
 - Configuration to use the Gfarm Samba VFS module
 

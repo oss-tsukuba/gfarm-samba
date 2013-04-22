@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.67])
-AC_INIT([gfarm_samba], [0.0.2])
+AC_INIT([gfarm_samba], [1.0.0])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AC_CONFIG_SRCDIR([gfarm.c])
 AC_CONFIG_HEADERS([config_gfarm.h])

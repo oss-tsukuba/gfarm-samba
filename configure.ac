@@ -30,7 +30,7 @@ AC_MSG_RESULT([$GFARM])
 AC_MSG_CHECKING([for Samba])
 AC_ARG_WITH([samba],
   AC_HELP_STRING([--with-samba=PATH], [path to sambe source [[/usr/src/samba/source3]]]))
-case x$with_gfarm in
+case x$with_samba in
   x|xyes|xno) SAMBA=/usr/src/samba/source3 ;;
   *) SAMBA=$with_samba ;;
 esac

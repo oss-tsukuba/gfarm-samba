@@ -11401,7 +11401,7 @@ if test "${with_samba+set}" = set; then :
   withval=$with_samba;
 fi
 
-case x$with_gfarm in
+case x$with_samba in
   x|xyes|xno) SAMBA=/usr/src/samba/source3 ;;
   *) SAMBA=$with_samba ;;
 esac

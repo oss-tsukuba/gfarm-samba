@@ -126,6 +126,11 @@ You can access \\samba_hostname\gfarm with Windows Explorer.
 ChangeLog
 =========
 
+[2015.11.28] v1.0.1
+
+Bug fix
+* configure --with-samba does not set samba source path
+
 [2013.3.31] v1.0.0
 
 New feature
